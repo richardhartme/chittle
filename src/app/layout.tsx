@@ -36,6 +36,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <main className="container">
           <Suspense fallback={<p className="muted">Loading…</p>}>{children}</Suspense>
         </main>
+        <footer className="site-footer">
+          <a href="https://github.com/richardhartme/chittle" target="_blank" rel="noopener noreferrer">
+            GitHub
+          </a>
+        </footer>
       </body>
     </html>
   );

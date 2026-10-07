@@ -143,7 +143,23 @@ p {
 .container {
   max-width: 880px;
   margin: 0 auto;
-  padding: 1.5rem 1.5rem 5rem;
+  padding: 1.5rem 1.5rem 2.5rem;
+}
+
+.site-footer {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 0 1.5rem 2.5rem;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.site-footer a {
+  color: var(--muted);
+}
+
+.site-footer a:hover {
+  color: var(--indigo);
 }
 
 /* Surfaces */
