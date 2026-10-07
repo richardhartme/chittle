@@ -24,6 +24,8 @@ export function PracticeSession({ categories }: Props) {
   const [topic, setTopic] = useState<Topic | null>(null);
   const [topicError, setTopicError] = useState<string | null>(null);
   const [loadingTopic, setLoadingTopic] = useState(false);
+  const [categoryTopics, setCategoryTopics] = useState<Topic[]>([]);
+  const [topicsRefresh, setTopicsRefresh] = useState(0);
 
   const [prepSeconds, setPrepSeconds] = useState(30);
   const [speakSeconds, setSpeakSeconds] = useState(120);
@@ -81,14 +83,29 @@ export function PracticeSession({ categories }: Props) {
     if (hydrated && camera === "ready" && videoRef.current) videoRef.current.srcObject = streamRef.current;
   }, [hydrated, camera]);
 
-  async function fetchTopic() {
+  // Load the topics the user can choose from. Refreshed after a roll, which may generate new ones.
+  useEffect(() => {
+    let cancelled = false;
+    if (!category) return;
+
+    fetch(`/api/topics?${new URLSearchParams({ category })}`)
+      .then((res) => (res.ok ? res.json() : { topics: [] }))
+      .then((data) => !cancelled && setCategoryTopics(data.topics))
+      .catch(() => !cancelled && setCategoryTopics([]));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [category, topicsRefresh]);
+
+  async function fetchTopic(topicId?: string) {
     setLoadingTopic(true);
     setTopicError(null);
     try {
       const res = await fetch("/api/topics/next", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category }),
+        body: JSON.stringify({ category, topicId }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -96,6 +113,7 @@ export function PracticeSession({ categories }: Props) {
         return;
       }
       setTopic(data.topic);
+      if (!topicId) setTopicsRefresh((n) => n + 1);
     } catch {
       setTopicError("Couldn't get a topic. Check your connection and try again.");
     } finally {
@@ -258,8 +276,28 @@ export function PracticeSession({ categories }: Props) {
           )}
           {topicError && <p className="error">{topicError}</p>}
 
+          {categoryTopics.length > 0 && (
+            <label>
+              Or choose an existing topic
+              <select
+                value={topic?.id ?? ""}
+                disabled={loadingTopic}
+                onChange={(event) => event.target.value && fetchTopic(event.target.value)}
+              >
+                <option value="" disabled>
+                  Choose a topic…
+                </option>
+                {categoryTopics.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.text}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
           <div className="row">
-            <button onClick={fetchTopic} disabled={loadingTopic || !category}>
+            <button onClick={() => fetchTopic()} disabled={loadingTopic || !category}>
               {loadingTopic ? "Finding a topic…" : topic ? "Re-roll topic" : "Get a topic"}
             </button>
             <button className="primary" onClick={begin} disabled={!canStart}>

@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth/session";
-import { nextTopic } from "@/lib/topics/next-topic";
+import { chooseTopic, nextTopic } from "@/lib/topics/next-topic";
 
-const bodySchema = z.object({ category: z.string().min(1) });
+const bodySchema = z.object({ category: z.string().min(1), topicId: z.uuid().optional() });
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -11,11 +11,18 @@ export async function POST(request: Request) {
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "A category is required" }, { status: 400 });
 
+  const { category, topicId } = parsed.data;
   try {
-    const topic = await nextTopic(user.id, parsed.data.category);
+    if (topicId) {
+      const chosen = await chooseTopic(user.id, category, topicId);
+      if (!chosen) return Response.json({ error: "That topic doesn't exist." }, { status: 404 });
+      return Response.json({ topic: { id: chosen.id, text: chosen.text } });
+    }
+
+    const topic = await nextTopic(user.id, category);
     if (!topic) {
       return Response.json(
-        { error: "No new topics are available in this category right now." },
+        { error: "You've seen every topic in this category. Choose one from the list to practise it again." },
         { status: 404 },
       );
     }

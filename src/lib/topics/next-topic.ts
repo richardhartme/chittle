@@ -1,4 +1,4 @@
-import { and, eq, notExists, sql } from "drizzle-orm";
+import { and, asc, eq, notExists, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { categories, topics, userSeenTopics, type Topic } from "@/db/schema";
 import { canGenerateTopics, generateTopics } from "./generate";
@@ -41,4 +41,27 @@ export async function nextTopic(userId: string, categorySlug: string): Promise<T
 
   await db.insert(userSeenTopics).values({ userId, topicId: topic.id }).onConflictDoNothing();
   return topic;
+}
+
+/** All topics in the category, for the user to choose from. */
+export async function categoryTopics(categorySlug: string): Promise<Pick<Topic, "id" | "text">[]> {
+  return db
+    .select({ id: topics.id, text: topics.text })
+    .from(topics)
+    .innerJoin(categories, eq(categories.id, topics.categoryId))
+    .where(eq(categories.slug, categorySlug))
+    .orderBy(asc(topics.text));
+}
+
+/** Returns a specific topic in the category and marks it as seen, so it isn't served again as new. */
+export async function chooseTopic(userId: string, categorySlug: string, topicId: string): Promise<Topic | null> {
+  const [row] = await db
+    .select({ topic: topics })
+    .from(topics)
+    .innerJoin(categories, eq(categories.id, topics.categoryId))
+    .where(and(eq(topics.id, topicId), eq(categories.slug, categorySlug)));
+  if (!row) return null;
+
+  await db.insert(userSeenTopics).values({ userId, topicId }).onConflictDoNothing();
+  return row.topic;
 }
