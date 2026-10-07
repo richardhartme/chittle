@@ -481,6 +481,43 @@ video {
   font-size: 1.05rem;
 }
 
+/* The one call to action on the page: amber is the only warm colour near the headline, so it stands apart from the indigo text. */
+.hero .button.primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 2.25rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  background: var(--amber);
+  border-color: var(--indigo);
+  color: var(--indigo);
+  box-shadow: 0 4px 0 var(--indigo);
+  transition: transform 0.15s, box-shadow 0.15s, background-color 0.15s;
+}
+
+.hero .button.primary::after {
+  content: "→";
+  transition: transform 0.15s;
+}
+
+.hero .button.primary:hover {
+  background: #ffb92e;
+  border-color: var(--indigo);
+  color: var(--indigo);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--indigo);
+}
+
+.hero .button.primary:hover::after {
+  transform: translateX(3px);
+}
+
+.hero .button.primary:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--indigo);
+}
+
 .hero-art {
   width: min(100%, 360px);
   height: auto;
@@ -557,5 +594,16 @@ video {
 
   .rec-dot {
     animation: none;
+  }
+
+  .hero .button.primary,
+  .hero .button.primary::after {
+    transition: none;
+  }
+
+  .hero .button.primary:hover,
+  .hero .button.primary:active,
+  .hero .button.primary:hover::after {
+    transform: none;
   }
 }
