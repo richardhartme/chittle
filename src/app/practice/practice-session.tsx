@@ -198,7 +198,9 @@ export function PracticeSession({ categories }: Props) {
             hidden={camera !== "ready"}
           />
         )}
-        {camera === "pending" && <p className="muted">Waiting for camera and microphone access…</p>}
+        {camera === "pending" && (
+          <p className="muted">Waiting for camera and microphone access…</p>
+        )}
         {camera === "unavailable" && (
           <div className="stack">
             <p className="error">
