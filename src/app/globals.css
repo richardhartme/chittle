@@ -1,0 +1,561 @@
+:root {
+  /* Palette */
+  --indigo: #2b0b7d;
+  --lavender: #9e82fa;
+  --amber: #f7a918;
+  --tan: #9c8666;
+  --plum: #583a47;
+  --lilac: #ac9ec7;
+
+  /* Tints derived from the palette */
+  --lavender-soft: #ede8ff;
+  --amber-soft: #fdebc6;
+  --tan-soft: #f1eadc;
+
+  /* Roles */
+  --bg: #fffaf1;
+  --surface: #ffffff;
+  --text: var(--plum);
+  --heading: var(--indigo);
+  --muted: #75657f;
+  --border: #e5ddf0;
+  --accent: var(--indigo);
+  --accent-hover: #3d1ba3;
+  --accent-text: #ffffff;
+  --danger: #c93b45;
+  --radius: 20px;
+  --radius-sm: 12px;
+  --shadow: 0 1px 2px rgb(43 11 125 / 0.05), 0 8px 24px -12px rgb(43 11 125 / 0.14);
+
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--text);
+  background: var(--bg);
+  font-family: var(--font-body), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--lavender);
+  color: var(--indigo);
+}
+
+a {
+  color: var(--accent);
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1.5px;
+}
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+:focus-visible {
+  outline: 3px solid var(--lavender);
+  outline-offset: 2px;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display), var(--font-body), system-ui, sans-serif;
+  color: var(--heading);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.75rem;
+}
+
+h1 {
+  font-size: clamp(2rem, 4.5vw, 2.75rem);
+  font-weight: 800;
+}
+
+h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+p {
+  margin: 0;
+}
+
+/* Shell */
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+.site-header nav {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.site-header nav a {
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  color: var(--indigo);
+  font-weight: 600;
+  font-size: 0.975rem;
+  text-decoration: none;
+}
+
+.site-header nav a:hover {
+  background: var(--lavender-soft);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 1.4rem;
+  letter-spacing: -0.03em;
+  text-decoration: none;
+  color: var(--indigo);
+}
+
+.brand:hover {
+  color: var(--indigo);
+}
+
+.brand-mark {
+  flex: none;
+}
+
+.container {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 5rem;
+}
+
+/* Surfaces */
+
+.card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.error {
+  color: var(--danger);
+  font-weight: 500;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+/* Forms */
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.925rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  line-height: 1.4;
+  padding: 0.65rem 0.9rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: var(--lilac);
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--indigo);
+  box-shadow: 0 0 0 3px var(--lavender-soft), 0 0 0 4.5px var(--lavender);
+}
+
+input,
+select {
+  min-height: 2.8rem;
+}
+
+textarea {
+  min-height: 6.5rem;
+  resize: vertical;
+}
+
+button,
+.button {
+  font: inherit;
+  font-weight: 600;
+  display: inline-block;
+  padding: 0.6rem 1.25rem;
+  border: 1.5px solid var(--indigo);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--indigo);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+button:hover,
+.button:hover {
+  background: var(--lavender-soft);
+  color: var(--indigo);
+}
+
+button.primary,
+.button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+button.primary:hover,
+.button.primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: var(--accent-text);
+}
+
+button.danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+button.danger:hover {
+  background: #fdecee;
+  color: var(--danger);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.link-button {
+  border: none;
+  background: none;
+  padding: 0.4rem 0.9rem;
+  color: var(--muted);
+}
+
+.link-button:hover {
+  background: var(--tan-soft);
+  color: var(--plum);
+}
+
+/* Video and practice */
+
+video {
+  width: 100%;
+  border-radius: var(--radius);
+  background: #1a0850;
+  aspect-ratio: 16 / 9;
+}
+
+.preview {
+  transform: scaleX(-1); /* mirror the live camera preview */
+}
+
+.topic {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(1.5rem, 3.5vw, 2rem);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  color: var(--indigo);
+  text-wrap: balance;
+}
+
+.countdown {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--indigo);
+  font-variant-numeric: tabular-nums;
+}
+
+.rec-dot {
+  display: inline-block;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background: var(--danger);
+  margin-right: 0.5rem;
+  animation: pulse 1.2s infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* Library */
+
+.recording-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.recording-list .card {
+  margin: 0;
+  padding: 0;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.recording-list .card:hover {
+  border-color: var(--lavender);
+  transform: translateY(-2px);
+}
+
+.recording-list a {
+  display: block;
+  padding: 1.25rem 1.5rem;
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: inherit;
+}
+
+.recording-list strong {
+  display: block;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--indigo);
+}
+
+/* Ratings */
+
+.rating-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.rating-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  flex-wrap: wrap;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-weight: 600;
+  color: var(--indigo);
+}
+
+.rating-options {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.rating-options label {
+  position: relative;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--indigo);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.rating-options label:hover {
+  background: var(--lavender-soft);
+  border-color: var(--lavender);
+}
+
+.rating-options label:has(input:checked) {
+  background: var(--indigo);
+  border-color: var(--indigo);
+  color: #fff;
+}
+
+.rating-options label:has(input:focus-visible) {
+  outline: 3px solid var(--lavender);
+  outline-offset: 2px;
+}
+
+/* The radio stays in the page for keyboard and screen reader use; the label is the visible control. */
+.rating-options input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Home */
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1.5rem;
+  padding: 2.5rem 0 3.5rem;
+}
+
+.hero h1 {
+  max-width: 16ch;
+  margin: 0;
+  font-size: clamp(2.5rem, 7vw, 4.25rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.hero h1 mark {
+  background: var(--lavender);
+  color: var(--indigo);
+  padding: 0 0.15em;
+  border-radius: 0.2em;
+  white-space: nowrap;
+}
+
+.hero p {
+  max-width: 34rem;
+  font-size: 1.2rem;
+  text-wrap: balance;
+}
+
+.hero .button {
+  padding: 0.8rem 1.75rem;
+  font-size: 1.05rem;
+}
+
+.hero-art {
+  width: min(100%, 360px);
+  height: auto;
+}
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1.25rem;
+}
+
+.steps li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  border-radius: var(--radius);
+  color: var(--indigo);
+}
+
+.steps li:nth-child(1) {
+  background: var(--lavender-soft);
+}
+
+.steps li:nth-child(2) {
+  background: var(--amber-soft);
+}
+
+.steps li:nth-child(3) {
+  background: var(--tan-soft);
+}
+
+.steps h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.steps p {
+  color: var(--plum);
+}
+
+.step-number {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-bottom: 0.5rem;
+  border-radius: 50%;
+  background: var(--indigo);
+  color: #fff;
+  font-weight: 700;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recording-list .card {
+    transition: none;
+  }
+
+  .recording-list .card:hover {
+    transform: none;
+  }
+
+  .rec-dot {
+    animation: none;
+  }
+}

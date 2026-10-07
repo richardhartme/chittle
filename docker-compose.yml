@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: chitter
+      POSTGRES_PASSWORD: chitter
+      POSTGRES_DB: chitter
+    ports:
+      # 5433 on the host so it doesn't clash with a locally installed Postgres on 5432
+      - "5433:5432"
+    volumes:
+      - chitter-pgdata:/var/lib/postgresql/data
+
+volumes:
+  chitter-pgdata:
