@@ -10,7 +10,6 @@ export function LoginForm() {
     return (
       <p>
         Check your email for a sign-in link. It expires in 15 minutes.
-        <span className="muted"> In development, the link is printed in the server console.</span>
       </p>
     );
   }
