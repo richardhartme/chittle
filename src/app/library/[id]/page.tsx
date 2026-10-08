@@ -3,11 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
-import { deleteRecording } from "@/app/actions";
 import { db } from "@/db";
 import { recordingRatings, recordings, topics } from "@/db/schema";
 import { requireUser } from "@/lib/auth/session";
 import { formatDate, formatDuration } from "@/lib/format";
+import { DeleteForm } from "./delete-form";
 import { RatingForm } from "./rating-form";
 
 export default function RecordingPage({ params }: PageProps<"/library/[id]">) {
@@ -50,10 +50,7 @@ async function Recording({ params }: Pick<PageProps<"/library/[id]">, "params">)
         <RatingForm recordingId={recording.id} initial={rating} />
       </div>
 
-      <form action={deleteRecording}>
-        <input type="hidden" name="recordingId" value={recording.id} />
-        <button className="danger">Delete recording</button>
-      </form>
+      <DeleteForm recordingId={recording.id} />
     </div>
   );
 }
