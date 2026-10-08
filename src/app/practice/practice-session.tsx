@@ -75,6 +75,9 @@ export function PracticeSession({ categories }: Props) {
       cancelled = true;
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
+      // With cacheComponents, navigating away hides the page rather than unmounting it, so state survives
+      // while this cleanup runs. Reset it so the stream is re-attached to the <video> when the page returns.
+      setCamera("pending");
     };
   }, [cameraAttempt]);
 

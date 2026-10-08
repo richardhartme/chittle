@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Activity } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const push = vi.fn();
@@ -134,6 +135,31 @@ describe("camera access", () => {
     await user.click(screen.getByRole("button", { name: "Try again" }));
 
     await waitFor(() => expect(screen.queryByText(/needs camera and microphone access/)).not.toBeInTheDocument());
+    expect(getUserMedia).toHaveBeenCalledTimes(2);
+  });
+
+  it("attaches a fresh stream when the page is hidden and shown again", async () => {
+    const streams = [
+      { id: "first", getTracks: () => [track] },
+      { id: "second", getTracks: () => [track] },
+    ];
+    getUserMedia.mockImplementation(() => Promise.resolve(streams.shift()));
+
+    const page = (mode: "visible" | "hidden") => (
+      <Activity mode={mode}>
+        <PracticeSession categories={categories} />
+      </Activity>
+    );
+    const { container, rerender } = render(page("visible"));
+    await waitFor(() => expect(screen.queryByText(/Waiting for camera/)).not.toBeInTheDocument());
+    const video = container.querySelector("video")!;
+    expect((video.srcObject as unknown as { id: string }).id).toBe("first");
+
+    // Next.js hides the page when navigating away, then shows it again on return.
+    rerender(page("hidden"));
+    rerender(page("visible"));
+
+    await waitFor(() => expect((video.srcObject as unknown as { id: string } | null)?.id).toBe("second"));
     expect(getUserMedia).toHaveBeenCalledTimes(2);
   });
 
