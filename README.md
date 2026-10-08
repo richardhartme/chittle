@@ -28,7 +28,9 @@ Recording needs camera and microphone access, which browsers only grant on `loca
 | `npm run db:generate` | Generate a SQL migration after editing `src/db/schema.ts` |
 | `npm run db:migrate` | Apply pending migrations |
 | `npm run db:seed` | Upsert categories and predefined topics (safe to re-run) |
-| `npm test` | Unit tests (Vitest) |
+| `npm test` | Run the test suite once (Vitest) |
+| `npm run test:watch` | Re-run affected tests on change |
+| `npm run test:coverage` | Run the suite with a coverage report (`coverage/`) |
 | `npm run lint` | ESLint |
 
 ## Layout
@@ -38,6 +40,17 @@ Recording needs camera and microphone access, which browsers only grant on `loca
 - `src/lib/auth` — magic links, sessions, email sending
 - `src/lib/topics` — topic selection (no repeats per user) and Claude generation
 - `src/lib/storage` — `Storage` interface and the local-disk implementation (recordings in `STORAGE_DIR`)
+
+## Testing
+
+`npm test` needs no Postgres, Docker or API keys. Database code runs against [PGlite](https://pglite.dev) (in-process Postgres) with the real migrations from `drizzle/` applied, so queries, constraints and cascades behave as in production.
+
+- `src/test/db.ts` — the PGlite database, `resetDb()` and row factories. Tests swap it in with `vi.mock("@/db", ...)`.
+- `src/test/next.ts` — in-memory `next/headers` cookies and a throwing `redirect`, mirroring Next.
+- `src/test/storage.ts` — points `getStorage()` at a temp directory per test.
+- Tests sit next to the code (`*.test.ts`). Component tests (`*.test.tsx`) opt in to jsdom with a `// @vitest-environment jsdom` docblock.
+- External services (Resend, Anthropic) are always mocked.
+- Async server-component pages (`page.tsx`, `layout.tsx`) aren't unit tested, since Vitest can't render them; their logic lives in `src/lib` and `actions.ts`, which are covered. End-to-end tests would be the way to cover the pages themselves.
 
 ## Notes
 
