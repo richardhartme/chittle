@@ -18,6 +18,10 @@ FROM base AS runner
 ENV NODE_ENV=production
 ENV STORAGE_DIR=/data/recordings
 
+# Coolify runs its health check inside the container with curl.
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+  && rm -rf /var/lib/apt/lists/*
+
 # Dev dependencies stay in the image so `npm run db:setup` can run against it.
 COPY --from=build /app ./
 
