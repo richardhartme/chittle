@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { assessments, recordings, transcripts } from "@/db/schema";
 import { transcribe } from "./deepgram";
@@ -9,10 +9,10 @@ export type AssessmentKeys = { deepgram: string; anthropic: string };
 const UNEXPECTED = "Something went wrong while assessing this recording, try again.";
 
 /**
- * Runs the assessment pipeline for a recording whose assessment has been claimed. Never throws: any
- * failure is stored on the assessment as a message that's safe to show the speaker.
+ * Runs the assessment pipeline for a recording whose assessment was claimed at `claimedAt`. Never
+ * throws: any failure is stored on the assessment as a message that's safe to show the speaker.
  */
-export async function runAssessment(recordingId: string, keys: AssessmentKeys): Promise<void> {
+export async function runAssessment(recordingId: string, claimedAt: Date, keys: AssessmentKeys): Promise<void> {
   try {
     const [recording] = await db.select().from(recordings).where(eq(recordings.id, recordingId));
     if (!recording) return; // Deleted since the assessment started.
@@ -30,22 +30,30 @@ export async function runAssessment(recordingId: string, keys: AssessmentKeys): 
     }
 
     // Measuring and judging come in later slices. For now a transcript completes the assessment.
-    await finish(recordingId, { status: "done", error: null });
+    await finish(recordingId, claimedAt, { status: "done", error: null });
   } catch (err) {
     if (!(err instanceof AssessmentError)) {
       console.error(`Assessment of recording ${recordingId} failed:`, redact(summarise(err), keys));
     }
-    await finish(recordingId, { status: "failed", error: err instanceof AssessmentError ? err.message : UNEXPECTED }).catch(
-      (finishErr) => console.error("Couldn't record the failed assessment:", redact(summarise(finishErr), keys)),
+    await finish(recordingId, claimedAt, {
+      status: "failed",
+      error: err instanceof AssessmentError ? err.message : UNEXPECTED,
+    }).catch((finishErr) =>
+      console.error("Couldn't record the failed assessment:", redact(summarise(finishErr), keys)),
     );
   }
 }
 
-async function finish(recordingId: string, outcome: { status: "done" | "failed"; error: string | null }) {
+/** Records the outcome, unless a Retry has since claimed the assessment again (its start time has moved on). */
+async function finish(
+  recordingId: string,
+  claimedAt: Date,
+  outcome: { status: "done" | "failed"; error: string | null },
+) {
   await db
     .update(assessments)
     .set({ ...outcome, completedAt: sql`now()` })
-    .where(eq(assessments.recordingId, recordingId));
+    .where(and(eq(assessments.recordingId, recordingId), eq(assessments.startedAt, claimedAt)));
 }
 
 const summarise = (err: unknown) => (err instanceof Error ? `${err.name}: ${err.message}` : String(err));

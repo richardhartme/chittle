@@ -31,31 +31,32 @@ const startedSecondsAgo = async () => (Date.now() - (await row()).startedAt.getT
 
 describe("claimAssessment", () => {
   it("claims a recording with no assessment, marking it pending from now", async () => {
-    expect(await claimAssessment(recordingId)).toBe(true);
+    const claimed = await claimAssessment(recordingId);
+    expect(claimed).toEqual((await row()).startedAt);
     expect(await row()).toMatchObject({ status: "pending", error: null, completedAt: null });
     expect(await startedSecondsAgo()).toBeLessThan(5);
   });
 
   it("refuses while a fresh pending assessment is running", async () => {
     await setRow("pending", 1);
-    expect(await claimAssessment(recordingId)).toBe(false);
+    expect(await claimAssessment(recordingId)).toBeNull();
     expect(await startedSecondsAgo()).toBeGreaterThan(55);
   });
 
   it("reclaims a pending assessment started more than 5 minutes ago", async () => {
     await setRow("pending", 6);
-    expect(await claimAssessment(recordingId)).toBe(true);
+    expect(await claimAssessment(recordingId)).toBeInstanceOf(Date);
     expect(await startedSecondsAgo()).toBeLessThan(5);
   });
 
   it("reclaims a failed assessment and clears its error", async () => {
     await setRow("failed", 1, "Deepgram rejected the key.");
-    expect(await claimAssessment(recordingId)).toBe(true);
+    expect(await claimAssessment(recordingId)).toBeInstanceOf(Date);
     expect(await row()).toMatchObject({ status: "pending", error: null });
   });
 
   it("lets only one of two simultaneous claims through", async () => {
     const results = await Promise.all([claimAssessment(recordingId), claimAssessment(recordingId)]);
-    expect(results.filter(Boolean)).toHaveLength(1);
+    expect(results.filter((r) => r !== null)).toHaveLength(1);
   });
 });

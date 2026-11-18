@@ -1,24 +1,24 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { assessments } from "@/db/schema";
-
-/** How long an assessment may stay pending before it's treated as failed and can be claimed again. */
-export const STALE_AFTER_MINUTES = 5;
+import { isStale } from "./status";
 
 /**
  * Marks a recording's assessment as pending from now, unless one is already running. One atomic
- * upsert, so two simultaneous claims can't both succeed. Returns whether this call claimed it.
+ * upsert, so two simultaneous claims can't both succeed. Returns the claim's start time, which the run
+ * uses to check that its claim hasn't been taken over, or null if an assessment is already running.
  */
-export async function claimAssessment(recordingId: string): Promise<boolean> {
-  const claimed = await db
+export async function claimAssessment(recordingId: string): Promise<Date | null> {
+  // Truncated to milliseconds so the value survives the round trip through a JavaScript Date.
+  const now = sql`date_trunc('milliseconds', now())`;
+  const [claimed] = await db
     .insert(assessments)
-    .values({ recordingId, status: "pending", startedAt: sql`now()` })
+    .values({ recordingId, status: "pending", startedAt: now })
     .onConflictDoUpdate({
       target: assessments.recordingId,
-      set: { status: "pending", startedAt: sql`now()`, completedAt: null, error: null },
-      setWhere: sql`${assessments.status} <> 'pending'
-        or ${assessments.startedAt} < now() - make_interval(mins => ${STALE_AFTER_MINUTES})`,
+      set: { status: "pending", startedAt: now, completedAt: null, error: null },
+      setWhere: sql`${assessments.status} <> 'pending' or ${isStale}`,
     })
-    .returning({ recordingId: assessments.recordingId });
-  return claimed.length > 0;
+    .returning({ startedAt: assessments.startedAt });
+  return claimed?.startedAt ?? null;
 }

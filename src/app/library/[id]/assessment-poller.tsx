@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import type { AssessmentState } from "@/lib/assessment/status";
 
 const POLL_MS = 3000;
 
@@ -9,7 +10,7 @@ const POLL_MS = 3000;
  * Watches a running assessment: checks its status every few seconds and refreshes the page
  * (re-rendering the server-side panel) as soon as it changes. Renders nothing.
  */
-export function AssessmentPoller({ recordingId, status }: { recordingId: string; status: string }) {
+export function AssessmentPoller({ recordingId, status }: { recordingId: string; status: AssessmentState["status"] }) {
   const router = useRouter();
 
   useEffect(() => {

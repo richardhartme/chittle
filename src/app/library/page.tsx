@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { db } from "@/db";
 import { assessments, recordings, topics } from "@/db/schema";
-import { assessmentStateColumns, toAssessmentState } from "@/lib/assessment/status";
+import { assessmentStateColumns, toAssessmentState, type AssessmentState } from "@/lib/assessment/status";
 import { requireUser } from "@/lib/auth/session";
 import { formatDate, formatDuration } from "@/lib/format";
 import { recordingMode } from "@/lib/practice";
@@ -60,7 +60,7 @@ async function Library() {
   );
 }
 
-function assessmentLabel(status: string) {
+function assessmentLabel(status: AssessmentState["status"]) {
   if (status === "pending") return " · Analysing…";
   if (status === "none") return " · Not assessed";
   return null;

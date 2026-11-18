@@ -6,12 +6,14 @@ import { streamOf, withTempStorage } from "@/test/storage";
 
 vi.mock("@/db", async () => ({ db: (await import("@/test/db")).db }));
 
+import { claimAssessment } from "./claim";
 import { runAssessment } from "./run";
 
 const temp = withTempStorage();
 const keys = { deepgram: "dg-secret-key", anthropic: "sk-secret-key" };
 
 let recordingId: string;
+let claim: Date;
 
 beforeEach(async () => {
   await resetDb();
@@ -19,8 +21,8 @@ beforeEach(async () => {
   const topic = await createTopic((await createCategory()).id);
   const recording = await createRecording(user.id, topic.id, { mimeType: "audio/webm" });
   await temp.storage().put(recording.storageKey, streamOf("audio-bytes"));
-  await db.insert(assessments).values({ recordingId: recording.id, status: "pending", startedAt: sql`now()` });
   recordingId = recording.id;
+  claim = (await claimAssessment(recordingId))!;
 });
 
 const deepgramWords = [
@@ -39,16 +41,14 @@ const success = (transcript = "Um, hello.", words = deepgramWords) => ({
   results: { channels: [{ alternatives: [{ transcript, confidence: 0.95, words }] }] },
 });
 
-const assessment = async () =>
-  (await db.select().from(assessments).where(eq(assessments.recordingId, recordingId)))[0];
-const transcript = async () =>
-  (await db.select().from(transcripts).where(eq(transcripts.recordingId, recordingId)))[0];
+const assessment = async () => (await db.select().from(assessments).where(eq(assessments.recordingId, recordingId)))[0];
+const transcript = async () => (await db.select().from(transcripts).where(eq(transcripts.recordingId, recordingId)))[0];
 
 describe("runAssessment", () => {
   it("sends the stored file to Deepgram's pre-recorded endpoint with the right parameters", async () => {
     const fetch = deepgramReplies(success());
 
-    await runAssessment(recordingId, keys);
+    await runAssessment(recordingId, claim, keys);
 
     expect(fetch).toHaveBeenCalledTimes(1);
     const [url, init] = fetch.mock.calls[0];
@@ -69,7 +69,7 @@ describe("runAssessment", () => {
   it("stores the transcript and marks the assessment done", async () => {
     deepgramReplies(success());
 
-    await runAssessment(recordingId, keys);
+    await runAssessment(recordingId, claim, keys);
 
     expect(await transcript()).toMatchObject({ text: "Um, hello.", words: deepgramWords, audioSeconds: 1.25 });
     const row = await assessment();
@@ -80,7 +80,7 @@ describe("runAssessment", () => {
   it("falls back to the plain word when Deepgram leaves out the punctuated one", async () => {
     deepgramReplies(success("hello", [{ word: "hello", start: 0, end: 0.5, confidence: 0.9 }] as never));
 
-    await runAssessment(recordingId, keys);
+    await runAssessment(recordingId, claim, keys);
 
     expect((await transcript()).words).toEqual([
       { word: "hello", punctuated_word: "hello", start: 0, end: 0.5, confidence: 0.9 },
@@ -91,7 +91,7 @@ describe("runAssessment", () => {
     await db.insert(transcripts).values({ recordingId, text: "Already here.", words: [], audioSeconds: 3 });
     const fetch = deepgramReplies(success());
 
-    await runAssessment(recordingId, keys);
+    await runAssessment(recordingId, claim, keys);
 
     expect(fetch).not.toHaveBeenCalled();
     expect((await transcript()).text).toBe("Already here.");
@@ -107,7 +107,7 @@ describe("runAssessment", () => {
   ])("marks the assessment failed when Deepgram answers %i", async (status, message) => {
     deepgramReplies({ err_code: "X", err_msg: "nope" }, status);
 
-    await runAssessment(recordingId, keys);
+    await runAssessment(recordingId, claim, keys);
 
     expect(await assessment()).toMatchObject({ status: "failed", error: message });
     expect(await transcript()).toBeUndefined();
@@ -116,7 +116,7 @@ describe("runAssessment", () => {
   it("marks the assessment failed when no speech was detected", async () => {
     deepgramReplies(success("", []));
 
-    await runAssessment(recordingId, keys);
+    await runAssessment(recordingId, claim, keys);
 
     expect(await assessment()).toMatchObject({ status: "failed", error: "No speech was detected." });
     expect(await transcript()).toBeUndefined();
@@ -125,7 +125,7 @@ describe("runAssessment", () => {
   it("marks the assessment failed when Deepgram can't be reached", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("fetch failed")));
 
-    await runAssessment(recordingId, keys);
+    await runAssessment(recordingId, claim, keys);
 
     expect(await assessment()).toMatchObject({ status: "failed", error: "Couldn't reach Deepgram, try again." });
   });
@@ -134,7 +134,7 @@ describe("runAssessment", () => {
     const fetch = deepgramReplies(success());
     await temp.storage().deletePrefix("");
 
-    await runAssessment(recordingId, keys);
+    await runAssessment(recordingId, claim, keys);
 
     expect(fetch).not.toHaveBeenCalled();
     expect(await assessment()).toMatchObject({ status: "failed", error: "The recording's file is missing." });
@@ -144,10 +144,25 @@ describe("runAssessment", () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error(`boom ${keys.deepgram}`)));
 
-    await runAssessment(recordingId, keys);
+    await runAssessment(recordingId, claim, keys);
 
     expect((await assessment()).error).not.toContain(keys.deepgram);
     expect(JSON.stringify(log.mock.calls)).not.toContain(keys.deepgram);
     log.mockRestore();
+  });
+
+  it("leaves a newer claim alone when an older run finishes after Retry took over", async () => {
+    deepgramReplies(success());
+    await db
+      .update(assessments)
+      .set({ startedAt: sql`now() - interval '6 minutes'` })
+      .where(eq(assessments.recordingId, recordingId));
+    const stale = (await assessment()).startedAt;
+    const retry = await claimAssessment(recordingId);
+    expect(retry).not.toBeNull();
+
+    await runAssessment(recordingId, stale, keys);
+
+    expect(await assessment()).toMatchObject({ status: "pending", startedAt: retry });
   });
 });
