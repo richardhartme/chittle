@@ -12,6 +12,7 @@ vi.mock("@/db", async () => ({ db: (await import("@/test/db")).db }));
 vi.mock("next/headers", async () => (await import("@/test/next")).headersMock);
 vi.mock("next/navigation", async () => (await import("@/test/next")).navigationMock);
 vi.mock("next/server", async () => (await import("@/test/next")).serverMock);
+vi.mock("@anthropic-ai/sdk", async (importOriginal) => (await import("@/test/claude")).anthropicMock(importOriginal));
 
 import { POST } from "./route";
 
@@ -204,7 +205,7 @@ describe("POST /api/recordings", () => {
 
         const { id } = await res.json();
         expect(fetch).toHaveBeenCalledTimes(1);
-        expect(await db.select().from(assessments)).toMatchObject([{ recordingId: id, status: "done" }]);
+        expect(await db.select().from(assessments)).toMatchObject([{ recordingId: id, status: "done", scoringVersion: 2 }]);
         expect(await db.select().from(transcripts)).toMatchObject([{ recordingId: id, text: "Hello there." }]);
       });
 

@@ -25,6 +25,9 @@
   --danger: #c93b45;
 
   /* Dimension colours */
+  --dimension-structure: var(--indigo);
+  --dimension-conciseness: var(--tan);
+  --dimension-confidence: var(--lavender);
   --dimension-filler: #e0474f;
   --dimension-pace: var(--amber);
   --dimension-pronunciation: #8a63f0;
@@ -502,6 +505,18 @@ audio {
   border-top: 6px solid var(--dimension);
 }
 
+.score-card.structure {
+  --dimension: var(--dimension-structure);
+}
+
+.score-card.conciseness {
+  --dimension: var(--dimension-conciseness);
+}
+
+.score-card.confidence {
+  --dimension: var(--dimension-confidence);
+}
+
 .score-card.pace {
   --dimension: var(--dimension-pace);
 }
@@ -517,6 +532,10 @@ audio {
 .score-card h3 {
   font-size: 1.1rem;
   margin: 0 0 0.25rem;
+}
+
+.score-card > p:not(.score) {
+  margin: 0 0 0.75rem;
 }
 
 .score-card .score {
@@ -554,6 +573,45 @@ audio {
   text-align: right;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+.overall-result .score {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.overall-result .score strong {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: var(--indigo);
+}
+
+.feedback-lists {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem;
+}
+
+.feedback-lists h2 {
+  font-size: 1.1rem;
+  margin: 0 0 0.5rem;
+}
+
+.feedback-lists ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.feedback-lists ul.strengths {
+  list-style: none;
+  padding-left: 0;
+}
+
+.strengths span {
+  color: var(--indigo);
+  font-weight: 800;
+  margin-right: 0.5rem;
 }
 
 /* Home */

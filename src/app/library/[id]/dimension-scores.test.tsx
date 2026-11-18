@@ -2,7 +2,9 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { Measurement } from "@/lib/assessment/measure";
-import { MeasuredScores } from "./measured-scores";
+import { scoreJudgement } from "@/lib/assessment/score";
+import { judgementFixture, wordsOf } from "@/test/judgement";
+import { DimensionScores } from "./dimension-scores";
 
 const measured: Measurement = {
   fillers: {
@@ -38,17 +40,50 @@ const measured: Measurement = {
 
 const card = (name: string) => screen.getByRole("heading", { name }).closest("li")!;
 
-describe("MeasuredScores", () => {
-  it("shows each measured dimension's score out of its maximum", () => {
-    render(<MeasuredScores scores={{ pace: 89, fillerRate: 120, pronunciation: 133 }} measured={measured} />);
+/** Scores as an assessment from scoring version 1 stored them: measured only. */
+const measuredOnly = { structure: null, conciseness: null, confidence: null, pace: 89, fillerRate: 120, pronunciation: 133 };
 
+const { judged } = scoreJudgement({
+  judgement: judgementFixture({ discourseFillers: [{ phrase: "you know", count: 2 }] }),
+  measured,
+  words: wordsOf("Um, you know, I think, you know, it went well."),
+  durationSeconds: 60,
+});
+const allScores = { structure: 205, conciseness: 150, confidence: 95, pronunciation: 133, fillerRate: 110, pace: 89 };
+
+describe("DimensionScores", () => {
+  it("shows all six dimensions' scores out of their maximums, with each summary", () => {
+    render(<DimensionScores scores={allScores} measured={measured} judged={judged} />);
+
+    expect(card("Structure")).toHaveTextContent("205/250");
+    expect(card("Conciseness")).toHaveTextContent("150/200");
+    expect(card("Confidence")).toHaveTextContent("95/150");
+    expect(card("Pronunciation")).toHaveTextContent("133/150");
+    expect(card("Filler rate")).toHaveTextContent("110/150");
+    expect(card("Pace")).toHaveTextContent("89/100");
+    expect(card("Structure")).toHaveTextContent("Structure summary.");
+    expect(card("Pace")).toHaveTextContent("Pace summary.");
+  });
+
+  it("counts the discourse fillers in the Filler rate numbers", () => {
+    render(<DimensionScores scores={allScores} measured={measured} judged={judged} />);
+
+    const filler = within(card("Filler rate"));
+    expect(filler.getByText("Fillers").nextSibling).toHaveTextContent(/^7$/); // 5 measured + 2 "you know"
+    expect(filler.getByText("“um” ×3, “uh” ×2, “you know” ×2")).toBeInTheDocument();
+  });
+
+  it("shows only the measured dimensions for an assessment from before judging", () => {
+    render(<DimensionScores scores={measuredOnly} measured={measured} />);
+
+    expect(screen.queryByRole("heading", { name: "Structure" })).not.toBeInTheDocument();
     expect(card("Pace")).toHaveTextContent("89/100");
     expect(card("Filler rate")).toHaveTextContent("120/150");
     expect(card("Pronunciation")).toHaveTextContent("133/150");
   });
 
-  it("shows each dimension's key numbers", () => {
-    render(<MeasuredScores scores={measured.scores} measured={measured} />);
+  it("shows each measured dimension's key numbers", () => {
+    render(<DimensionScores scores={measuredOnly} measured={measured} />);
 
     const pace = within(card("Pace"));
     expect(pace.getByText("172 · Slow")).toBeInTheDocument();
@@ -64,7 +99,7 @@ describe("MeasuredScores", () => {
 
   it("says when there wasn't enough fluent speech for a baseline", () => {
     const noBaseline = { ...measured, pace: { ...measured.pace, baselineWpm: null, baselineRange: null } };
-    render(<MeasuredScores scores={measured.scores} measured={noBaseline} />);
+    render(<DimensionScores scores={measuredOnly} measured={noBaseline} />);
 
     expect(within(card("Pace")).getByText("Not enough fluent speech")).toBeInTheDocument();
   });

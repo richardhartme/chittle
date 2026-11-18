@@ -1,7 +1,10 @@
-export const seedCategories: { slug: string; name: string; topics: string[] }[] = [
+import type { FrameworkId } from "@/lib/frameworks";
+
+export const seedCategories: { slug: string; name: string; framework: FrameworkId; topics: string[] }[] = [
   {
     slug: "interview",
     name: "Interview",
+    framework: "star",
     topics: [
       "Tell me about yourself.",
       "Why do you want this role?",
@@ -18,6 +21,7 @@ export const seedCategories: { slug: string; name: string; topics: string[] }[] 
   {
     slug: "everyday",
     name: "Everyday life",
+    framework: "prep",
     topics: [
       "Describe your perfect weekend.",
       "What is the best meal you have ever had?",
@@ -32,6 +36,7 @@ export const seedCategories: { slug: string; name: string; topics: string[] }[] 
   {
     slug: "opinion",
     name: "Opinion",
+    framework: "prep",
     topics: [
       "Should everyone learn to code?",
       "Is remote work better than working in an office?",
@@ -46,6 +51,7 @@ export const seedCategories: { slug: string; name: string; topics: string[] }[] 
   {
     slug: "storytelling",
     name: "Storytelling",
+    framework: "story_arc",
     topics: [
       "Tell the story of the most memorable trip you have taken.",
       "Describe a time you were completely lost.",
@@ -59,6 +65,7 @@ export const seedCategories: { slug: string; name: string; topics: string[] }[] 
   {
     slug: "work",
     name: "Work & presentations",
+    framework: "what_so_what_now_what",
     topics: [
       "Give a one-minute pitch for a product you use every day.",
       "Explain what you do for a living to a ten-year-old.",

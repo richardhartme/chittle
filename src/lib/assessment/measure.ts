@@ -1,4 +1,5 @@
 import type { TranscriptWord } from "@/db/schema";
+import { DIMENSIONS } from "./dimensions";
 
 /** Deepgram's filler tokens (with `filler_words=true`), in their plain-word form. */
 export const FILLER_TOKENS: ReadonlySet<string> = new Set(["uh", "um", "mhm", "mm-mm", "uh-uh", "uh-huh", "nuh-uh", "hmm"]);
@@ -68,7 +69,13 @@ export const BAND_LABELS = ["Very slow", "Slow", "Ideal", "Fast", "Very fast"] a
 export type PaceBand = (typeof BAND_LABELS)[number];
 
 /** The maximum score of each measured dimension and sub-score. */
-export const MAX_SCORE = { pace: 100, pauseTiming: 50, wordsPerMinute: 50, fillerRate: 150, pronunciation: 150 } as const;
+export const MAX_SCORE = {
+  pace: DIMENSIONS.pace.max,
+  pauseTiming: DIMENSIONS.pace.subScores.pauseTiming.max,
+  wordsPerMinute: DIMENSIONS.pace.subScores.wordsPerMinute.max,
+  fillerRate: DIMENSIONS.fillerRate.max,
+  pronunciation: DIMENSIONS.pronunciation.max,
+};
 
 export type FillerCount = { word: string; count: number };
 
