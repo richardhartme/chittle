@@ -1,11 +1,12 @@
 /**
  * The six dimensions a recording is scored on, in display order, with their sub-scores and maximums
  * (SPEC → Assessment → Score). The maximums add up to 1000. Judged sub-scores carry the rubric Claude
- * scores them against.
+ * scores them against, which is also what the speaker is shown; measured ones carry a description.
  */
 export const DIMENSIONS = {
   structure: {
     name: "Structure",
+    description: "How your answer is organised, judged against the category's framework.",
     max: 250,
     source: "judged",
     subScores: {
@@ -38,6 +39,7 @@ export const DIMENSIONS = {
   },
   conciseness: {
     name: "Conciseness",
+    description: "How few words you need to make your point.",
     max: 200,
     source: "judged",
     subScores: {
@@ -60,6 +62,7 @@ export const DIMENSIONS = {
   },
   confidence: {
     name: "Confidence",
+    description: "How firmly you state your points, without hedging them.",
     max: 150,
     source: "judged",
     subScores: {
@@ -77,23 +80,42 @@ export const DIMENSIONS = {
   },
   pronunciation: {
     name: "Pronunciation",
+    description: "How clearly your words came across. Accent never lowers it.",
     max: 150,
     source: "measured",
-    subScores: { pronunciationClarity: { name: "Pronunciation clarity", max: 150 } },
+    subScores: {
+      pronunciationClarity: {
+        name: "Pronunciation clarity",
+        max: 150,
+        description: "The share of your words the transcription heard clearly.",
+      },
+    },
   },
   fillerRate: {
     name: "Filler rate",
+    description: "How often you fill pauses with words like “um” or “you know”.",
     max: 150,
     source: "measured",
-    subScores: { fillerFrequency: { name: "Filler frequency", max: 150 } },
+    subScores: {
+      fillerFrequency: { name: "Filler frequency", max: 150, description: "Fillers per 100 words: the fewer, the higher." },
+    },
   },
   pace: {
     name: "Pace",
+    description: "How fast you speak, and where you pause.",
     max: 100,
     source: "measured",
     subScores: {
-      pauseTiming: { name: "Pause timing", max: 50 },
-      wordsPerMinute: { name: "Words per minute", max: 50 },
+      pauseTiming: {
+        name: "Pause timing",
+        max: 50,
+        description: "Long pauses in the middle of a sentence cost points. Pauses between sentences don't.",
+      },
+      wordsPerMinute: {
+        name: "Words per minute",
+        max: 50,
+        description: "Full marks for an Active WPM of 180 to 220, falling away either side.",
+      },
     },
   },
 } as const;

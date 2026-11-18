@@ -1,7 +1,7 @@
 import type { TranscriptWord } from "@/db/schema";
 import { DIMENSION_KEYS, DIMENSIONS, type DimensionKey } from "./dimensions";
 import type { Judgement } from "./judgement";
-import { FILLER_TOKENS, fillerRateScore, type FillerCount, type Measurement } from "./measure";
+import { FILLER_TOKENS, fillerRateScore, measuredSubScores, type FillerCount, type Measurement } from "./measure";
 
 /** At most this many strengths and areas to improve are kept. */
 export const MAX_STRENGTHS = 3;
@@ -50,12 +50,8 @@ export function scoreJudgement({
   // Nothing said (fillers aside) scores nothing, as in measure().
   const fillerScore = measured.sentences.words > 0 ? fillerRateScore(per100Words) : 0;
 
-  const measuredScores: Record<string, number> = {
-    pronunciationClarity: measured.scores.pronunciation,
-    fillerFrequency: fillerScore,
-    pauseTiming: measured.subScores.pauseTiming,
-    wordsPerMinute: measured.subScores.wordsPerMinute,
-  };
+  // Filler frequency is rescored with the discourse fillers added.
+  const measuredScores: Record<string, number> = { ...measuredSubScores(measured), fillerFrequency: fillerScore };
 
   const dimensions = Object.fromEntries(
     DIMENSION_KEYS.map((key) => {

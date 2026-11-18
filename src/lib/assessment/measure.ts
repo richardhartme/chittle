@@ -180,6 +180,11 @@ export function measure(words: TranscriptWord[], durationSeconds: number): Measu
   };
 }
 
+/** Each measured sub-score, by its key in `DIMENSIONS`. */
+export function measuredSubScores({ scores, subScores }: Measurement): Record<string, number> {
+  return { pronunciationClarity: scores.pronunciation, fillerFrequency: scores.fillerRate, ...subScores };
+}
+
 /**
  * The Filler rate score (out of 150) for a rate of fillers per 100 words. Exported so the judging step
  * can rescore once it has added the discourse fillers Claude finds.

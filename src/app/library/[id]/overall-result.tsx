@@ -1,23 +1,16 @@
-import { MAX_TOTAL } from "@/lib/assessment/dimensions";
-
-/** The recording's score out of 1000, with the overview, strengths and areas to improve. */
+/** The recording's overview, strengths and areas to improve. */
 export function OverallResult({
-  total,
   overview,
   strengths,
   areasToImprove,
 }: {
-  total: number;
   overview: string;
   strengths: string[];
   areasToImprove: string[];
 }) {
   return (
     <section className="card stack overall-result">
-      <p className="score">
-        <strong>{total}</strong>
-        <span className="muted">/{MAX_TOTAL}</span>
-      </p>
+      <h2>Overview</h2>
       <p>{overview}</p>
       <div className="feedback-lists">
         <div>
