@@ -4,19 +4,16 @@ import { describe, expect, it } from "vitest";
 import { OverallResult } from "./overall-result";
 
 const props = {
-  total: 742,
   overview: "A well-ordered answer that would land harder with a direct opening.",
   strengths: ["Clear example", "Strong close"],
   areasToImprove: ["Open with your point", "Cut the hedges"],
 };
 
 describe("OverallResult", () => {
-  it("shows the score out of 1000 and the overview", () => {
+  it("shows the overview under its heading", () => {
     render(<OverallResult {...props} />);
 
-    expect(screen.getByText("742")).toBeInTheDocument();
-    expect(screen.getByText("/1000")).toBeInTheDocument();
-    expect(screen.getByText(props.overview)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Overview" }).nextElementSibling).toHaveTextContent(props.overview);
   });
 
   it("lists the strengths with ticks and the areas to improve", () => {
