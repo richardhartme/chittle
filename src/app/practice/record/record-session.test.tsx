@@ -179,7 +179,9 @@ describe("the microphone level meter", () => {
   it("moves with the microphone input in audio-only mode", async () => {
     const advance = useFakeClock();
     await renderReady({ mode: "audio" });
-    expect(FakeAudioContext.instances[0].sources).toHaveLength(1);
+    // The meter opens its audio context in an effect, which can run after the Start button is enabled.
+    // vi.waitFor polls on real timers, which the fake clock leaves alone.
+    await vi.waitFor(() => expect(FakeAudioContext.instances[0]?.sources).toHaveLength(1));
 
     await advance(200);
     expect(Number(meter().getAttribute("aria-valuenow"))).toBe(0);
@@ -436,7 +438,8 @@ describe("cleanup", () => {
     const { container, rerender } = render(page("visible"));
     await waitFor(() => expect(startButton()).toBeEnabled());
     const video = container.querySelector("video")!;
-    expect((video.srcObject as unknown as { id: string }).id).toBe("first");
+    // The stream is attached in an effect, which can run after the Start button is enabled.
+    await waitFor(() => expect((video.srcObject as unknown as { id: string } | null)?.id).toBe("first"));
 
     // Next.js hides the page when navigating away, then shows it again on return.
     rerender(page("hidden"));
