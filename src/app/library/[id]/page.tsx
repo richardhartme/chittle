@@ -13,6 +13,7 @@ import { formatDate, formatDuration } from "@/lib/format";
 import { recordingMode } from "@/lib/practice";
 import { AssessmentPoller } from "./assessment-poller";
 import { DeleteForm } from "./delete-form";
+import { MeasuredScores } from "./measured-scores";
 
 export default function RecordingPage({ params }: PageProps<"/library/[id]">) {
   return (
@@ -82,15 +83,31 @@ async function AssessmentPanel({
   }
 
   if (assessment.status === "done") {
-    const [transcript] = await db
-      .select({ text: transcripts.text })
-      .from(transcripts)
-      .where(eq(transcripts.recordingId, recordingId));
+    const [row] = await db
+      .select({
+        transcript: transcripts.text,
+        pace: assessments.paceScore,
+        fillerRate: assessments.fillerRateScore,
+        pronunciation: assessments.pronunciationScore,
+        result: assessments.result,
+      })
+      .from(assessments)
+      .leftJoin(transcripts, eq(transcripts.recordingId, assessments.recordingId))
+      .where(eq(assessments.recordingId, recordingId));
     return (
-      <section className="card stack">
-        <h2>Transcript</h2>
-        <p>{transcript?.text ?? "No transcript was stored."}</p>
-      </section>
+      <>
+        {/* Assessments from before measuring was added have no result. */}
+        {row?.result && (
+          <MeasuredScores
+            scores={{ pace: row.pace, fillerRate: row.fillerRate, pronunciation: row.pronunciation }}
+            measured={row.result.measured}
+          />
+        )}
+        <section className="card stack">
+          <h2>Transcript</h2>
+          <p>{row?.transcript ?? "No transcript was stored."}</p>
+        </section>
+      </>
     );
   }
 

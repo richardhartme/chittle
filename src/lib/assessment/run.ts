@@ -3,6 +3,11 @@ import { db } from "@/db";
 import { assessments, recordings, transcripts } from "@/db/schema";
 import { transcribe } from "./deepgram";
 import { AssessmentError } from "./errors";
+import { measure } from "./measure";
+import type { AssessmentResult } from "./result";
+
+/** Bump when the scoring rules or prompts change. Version 1 has the measured dimensions only. */
+export const SCORING_VERSION = 1;
 
 export type AssessmentKeys = { deepgram: string; anthropic: string };
 
@@ -17,20 +22,30 @@ export async function runAssessment(recordingId: string, claimedAt: Date, keys: 
     const [recording] = await db.select().from(recordings).where(eq(recordings.id, recordingId));
     if (!recording) return; // Deleted since the assessment started.
 
-    const [existing] = await db
-      .select({ recordingId: transcripts.recordingId })
+    let [transcript] = await db
+      .select({ words: transcripts.words, audioSeconds: transcripts.audioSeconds })
       .from(transcripts)
       .where(eq(transcripts.recordingId, recordingId));
-    if (!existing) {
-      const transcript = await transcribe(recording, keys.deepgram);
+    if (!transcript) {
+      const fresh = await transcribe(recording, keys.deepgram);
       await db
         .insert(transcripts)
-        .values({ recordingId, ...transcript })
+        .values({ recordingId, ...fresh })
         .onConflictDoNothing();
+      transcript = fresh;
     }
 
-    // Measuring and judging come in later slices. For now a transcript completes the assessment.
-    await finish(recordingId, claimedAt, { status: "done", error: null });
+    // Judging the other three dimensions, and so the total score, comes in a later slice.
+    const measured = measure(transcript.words, transcript.audioSeconds);
+    await finish(recordingId, claimedAt, {
+      status: "done",
+      error: null,
+      scoringVersion: SCORING_VERSION,
+      paceScore: measured.scores.pace,
+      fillerRateScore: measured.scores.fillerRate,
+      pronunciationScore: measured.scores.pronunciation,
+      result: { measured } satisfies AssessmentResult,
+    });
   } catch (err) {
     if (!(err instanceof AssessmentError)) {
       console.error(`Assessment of recording ${recordingId} failed:`, redact(summarise(err), keys));
@@ -48,7 +63,7 @@ export async function runAssessment(recordingId: string, claimedAt: Date, keys: 
 async function finish(
   recordingId: string,
   claimedAt: Date,
-  outcome: { status: "done" | "failed"; error: string | null },
+  outcome: { status: "done" | "failed"; error: string | null } & Partial<typeof assessments.$inferInsert>,
 ) {
   await db
     .update(assessments)

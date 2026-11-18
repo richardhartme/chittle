@@ -11,6 +11,7 @@ import {
   unique,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { AssessmentResult } from "@/lib/assessment/result";
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 
@@ -145,7 +146,7 @@ export const assessments = pgTable("assessments", {
   completedAt: timestamp("completed_at", { withTimezone: true }),
   // A short message that's safe to show the speaker. Never contains a provider key.
   error: text("error"),
-  // The dimension scores and result stay null until scoring is added.
+  // Null until the assessment is done. The judged scores and total stay null until judging is added.
   scoringVersion: integer("scoring_version"),
   totalScore: integer("total_score"),
   structureScore: integer("structure_score"),
@@ -154,7 +155,7 @@ export const assessments = pgTable("assessments", {
   pronunciationScore: integer("pronunciation_score"),
   fillerRateScore: integer("filler_rate_score"),
   paceScore: integer("pace_score"),
-  result: jsonb("result"),
+  result: jsonb("result").$type<AssessmentResult>(),
 });
 
 export type User = typeof users.$inferSelect;
