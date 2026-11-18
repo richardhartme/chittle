@@ -6,10 +6,16 @@ import { FILLER_TOKENS, fillerRateScore, measuredSubScores, type FillerCount, ty
 /** At most this many strengths and areas to improve are kept. */
 export const MAX_STRENGTHS = 3;
 export const MAX_AREAS_TO_IMPROVE = 4;
+/** At most this many shorter ways are kept. */
+export const MAX_SHORTER_WAYS = 4;
 
 export type PhraseCount = { phrase: string; count: number };
 
 export type ScoredSubScore = { score: number; feedback: string };
+
+export type ShorterWay = { original: string; shorter: string; savedWords: number };
+
+export type CoachInsights = Omit<Judgement["coachInsights"], "shorterWays"> & { shorterWays: ShorterWay[] };
 
 /** The judging step's part of `assessments.result`, after its scores and counts have been checked. */
 export type JudgedResult = {
@@ -21,6 +27,8 @@ export type JudgedResult = {
   overview: string;
   strengths: string[];
   areasToImprove: string[];
+  /** From scoring version 3; includes the ideal version. */
+  coachInsights?: CoachInsights;
 };
 
 export type Scored = { scores: Record<DimensionKey, number>; total: number; judged: JudgedResult };
@@ -94,6 +102,11 @@ export function scoreJudgement({
       overview: judgement.overview,
       strengths: judgement.strengths.slice(0, MAX_STRENGTHS),
       areasToImprove: judgement.areasToImprove.slice(0, MAX_AREAS_TO_IMPROVE),
+      coachInsights: {
+        ...judgement.coachInsights,
+        tryOpeningWith: unquote(judgement.coachInsights.tryOpeningWith),
+        shorterWays: spokenShorterWays(judgement.coachInsights.shorterWays, tokens),
+      },
     },
   };
 }
@@ -113,6 +126,24 @@ function verify(phrases: PhraseCount[], tokens: string[]): PhraseCount[] {
     .filter((p) => p.count > 0)
     .sort((a, b) => b.count - a.count || a.phrase.localeCompare(b.phrase));
 }
+
+/**
+ * Keeps the shorter ways whose original sentence was actually spoken (ignoring case, punctuation and
+ * spacing) and that save words, working out how many each saves.
+ */
+function spokenShorterWays(ways: Judgement["coachInsights"]["shorterWays"], tokens: string[]): ShorterWay[] {
+  return ways
+    .flatMap(({ original, shorter }) => {
+      const spoken = normalise(original);
+      if (spoken.length === 0 || occurrences(spoken, tokens) === 0) return [];
+      const savedWords = spoken.length - normalise(shorter).length;
+      return savedWords > 0 ? [{ original, shorter, savedWords }] : [];
+    })
+    .slice(0, MAX_SHORTER_WAYS);
+}
+
+/** Without surrounding quotation marks, since the page adds its own. */
+const unquote = (text: string) => text.trim().replace(/^["“”'‘’]+|["“”'‘’]+$/g, "").trim();
 
 /** Lower-case words, with curly apostrophes straightened and other punctuation dropped. */
 const normalise = (text: string) =>

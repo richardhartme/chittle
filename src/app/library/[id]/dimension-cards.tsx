@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { DIMENSION_KEYS, DIMENSIONS, type DimensionKey } from "@/lib/assessment/dimensions";
 import { measuredSubScores, type Measurement } from "@/lib/assessment/measure";
 import type { JudgedResult } from "@/lib/assessment/score";
 import { DimensionIcon } from "./dimension-icons";
 import { DimensionStats } from "./dimension-stats";
+import { DrawerCloseButton, useDrawer } from "./drawer";
 import { Bar, ScoreOutOf } from "./score-parts";
 
 type Scores = Record<DimensionKey, number | null>;
@@ -19,22 +20,9 @@ type Props = { scores: Scores; measured: Measurement; judged?: JudgedResult; dur
 export function DimensionCards(props: Props) {
   const { scores, judged } = props;
   const keys = judged ? DIMENSION_KEYS : DIMENSION_KEYS.filter((key) => DIMENSIONS[key].source === "measured");
-  // A new object on every click, so reopening the same card reruns the effect even if a late `close` is pending.
-  const [opened, setOpened] = useState<{ dimension: DimensionKey } | null>(null);
-  const open = opened?.dimension ?? null;
-  const dialog = useRef<HTMLDialogElement>(null);
   const cards = useRef<Partial<Record<DimensionKey, HTMLButtonElement | null>>>({});
-
-  useEffect(() => {
-    if (opened) dialog.current?.showModal();
-  }, [opened]);
-
-  function onClose() {
-    // Browsers fire `close` after a task, so it can arrive once another card has already reopened the drawer.
-    if (dialog.current?.open) return;
-    if (open) cards.current[open]?.focus();
-    setOpened(null);
-  }
+  const drawer = useDrawer<DimensionKey>((dimension) => cards.current[dimension]?.focus());
+  const open = drawer.value;
 
   return (
     <>
@@ -48,7 +36,7 @@ export function DimensionCards(props: Props) {
               }}
               className={`card dimension-card ${key}`}
               aria-haspopup="dialog"
-              onClick={() => setOpened({ dimension: key })}
+              onClick={() => drawer.open(key)}
             >
               <DimensionIcon dimension={key} />
               <span className="dimension-card-name">{DIMENSIONS[key].name}</span>
@@ -61,17 +49,8 @@ export function DimensionCards(props: Props) {
         ))}
       </ul>
 
-      <dialog
-        ref={dialog}
-        className={`drawer ${open ?? ""}`}
-        aria-labelledby="drawer-title"
-        onClose={onClose}
-        // A click on the dialog itself, not its contents, is a click on the backdrop.
-        onClick={(event) => {
-          if (event.target === event.currentTarget) event.currentTarget.close();
-        }}
-      >
-        {open && <Drawer dimension={open} {...props} onClose={() => dialog.current?.close()} />}
+      <dialog {...drawer.dialogProps} className={`drawer ${open ?? ""}`} aria-labelledby="drawer-title">
+        {open && <Drawer dimension={open} {...props} onClose={drawer.close} />}
       </dialog>
     </>
   );
@@ -88,11 +67,7 @@ function Drawer({ dimension, scores, measured, judged, durationSeconds, onClose 
           <h2 id="drawer-title">{name}</h2>
           <p className="muted">{description}</p>
         </div>
-        <button type="button" className="drawer-close" aria-label="Close" onClick={onClose}>
-          <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20">
-            <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-        </button>
+        <DrawerCloseButton onClick={onClose} />
       </header>
 
       <div>

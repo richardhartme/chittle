@@ -44,6 +44,23 @@ describe("buildJudgeRequest", () => {
     expect(message).not.toContain("STAR");
   });
 
+  it("asks for the ideal version with one entry for each of the framework's steps, in order", () => {
+    const star = userMessage(buildJudgeRequest(input()));
+    const storyArc = userMessage(buildJudgeRequest(input({ category: "Storytelling", framework: "story_arc" })));
+
+    expect(star).toMatch(/ideal version.*one entry for each step, in this order: Situation, Task, Action, Result\./i);
+    expect(storyArc).toMatch(
+      /ideal version.*one entry for each step, in this order: Setup, Conflict, Turning point, Resolution, Lesson\./i,
+    );
+  });
+
+  it("tells Claude to quote only sentences that were spoken in Shorter ways, and to keep the speaker's facts", () => {
+    const system = systemPrompt(buildJudgeRequest(input()));
+
+    expect(system).toMatch(/shorter ways.*exactly as it appears in the transcript/i);
+    expect(system).toMatch(/ideal version.*don't invent/i);
+  });
+
   it("gives Claude the transcript, the duration and the measured metrics and scores", () => {
     const message = userMessage(buildJudgeRequest(input()));
 
