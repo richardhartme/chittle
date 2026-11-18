@@ -94,7 +94,6 @@ export const recordings = pgTable(
     mimeType: text("mime_type").notNull(),
     sizeBytes: integer("size_bytes").notNull(),
     durationSeconds: integer("duration_seconds").notNull(),
-    prepSeconds: integer("prep_seconds").notNull(),
     createdAt: createdAt(),
   },
   (t) => [index("recordings_user_created_idx").on(t.userId, t.createdAt)],
@@ -112,7 +111,9 @@ export const recordingRatings = pgTable(
     confidence: rating("confidence"),
     structure: rating("structure"),
     pacing: rating("pacing"),
-    bodyLanguage: rating("body_language"),
+    // Null for audio-only recordings, which have no body language to rate. The range check below
+    // still applies to video ratings: a null makes its clause null, which a CHECK accepts.
+    bodyLanguage: smallint("body_language"),
     note: text("note").notNull().default(""),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

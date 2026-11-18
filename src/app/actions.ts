@@ -7,6 +7,7 @@ import { db } from "@/db";
 import { recordingRatings, recordings, users } from "@/db/schema";
 import { consumeMagicLink, normaliseEmail, requestMagicLink } from "@/lib/auth/magic-link";
 import { createSession, destroySession, requireUser } from "@/lib/auth/session";
+import { recordingMode } from "@/lib/practice";
 import { getStorage } from "@/lib/storage";
 
 export type FormState = { error?: string; sent?: boolean; saved?: boolean } | undefined;
@@ -44,22 +45,29 @@ const ratingSchema = z.object({
   confidence: ratingValue,
   structure: ratingValue,
   pacing: ratingValue,
-  bodyLanguage: ratingValue,
+  // Required for video recordings only; checked once the recording's mode is known.
+  bodyLanguage: ratingValue.optional(),
   note: z.string().max(5000),
 });
 
 export async function saveRating(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireUser();
 
+  const invalid = { error: "Please rate every criterion from 1 to 5." };
   const parsed = ratingSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { error: "Please rate every criterion from 1 to 5." };
-  const { recordingId, ...values } = parsed.data;
+  if (!parsed.success) return invalid;
+  const { recordingId, bodyLanguage, ...rest } = parsed.data;
 
   const [owned] = await db
-    .select({ id: recordings.id })
+    .select({ mimeType: recordings.mimeType })
     .from(recordings)
     .where(and(eq(recordings.id, recordingId), eq(recordings.userId, user.id)));
   if (!owned) return { error: "Recording not found." };
+
+  // Audio-only recordings have no body language to rate.
+  const isAudio = recordingMode(owned.mimeType) === "audio";
+  if (!isAudio && bodyLanguage === undefined) return invalid;
+  const values = { ...rest, bodyLanguage: isAudio ? null : bodyLanguage };
 
   await db
     .insert(recordingRatings)

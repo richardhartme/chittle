@@ -29,7 +29,7 @@ function upload(
   body: BodyInit | null = "video-bytes",
   { contentType = "video/webm", query }: { contentType?: string | null; query?: Record<string, string> } = {},
 ) {
-  const params = new URLSearchParams({ topicId, durationSeconds: "42", prepSeconds: "30", ...query });
+  const params = new URLSearchParams({ topicId, durationSeconds: "42", ...query });
   const headers = new Headers();
   if (contentType) headers.set("Content-Type", contentType);
   return POST(new Request(`http://localhost/api/recordings?${params}`, { method: "POST", headers, body }));
@@ -66,9 +66,9 @@ describe("POST /api/recordings", () => {
         mimeType: "video/webm",
         sizeBytes: "video-bytes".length,
         durationSeconds: 42,
-        prepSeconds: 30,
         storageKey: `${user.id}/${id}.webm`,
       });
+      expect(row).not.toHaveProperty("prepSeconds");
       expect(await readFile(path.join(temp.root, row.storageKey), "utf8")).toBe("video-bytes");
     });
 
@@ -84,15 +84,18 @@ describe("POST /api/recordings", () => {
       ["video/mp4", "mp4"],
       ["video/x-matroska", "mkv"],
       ["video/quicktime", "bin"],
+      ["audio/webm", "webm"],
+      ["audio/mp4", "m4a"],
+      ["audio/ogg", "bin"],
     ])("uses the %s extension .%s", async (contentType, extension) => {
       await signIn();
       await upload("x", { contentType });
       expect((await db.select().from(recordings))[0].storageKey).toMatch(new RegExp(`\\.${extension}$`));
     });
 
-    it("accepts zero durations", async () => {
+    it("accepts a zero duration", async () => {
       await signIn();
-      const res = await upload("x", { query: { durationSeconds: "0", prepSeconds: "0" } });
+      const res = await upload("x", { query: { durationSeconds: "0" } });
       expect(res.status).toBe(201);
     });
 
@@ -101,7 +104,6 @@ describe("POST /api/recordings", () => {
       ["a non-uuid topicId", { topicId: "nope" }],
       ["a negative duration", { durationSeconds: "-1" }],
       ["a fractional duration", { durationSeconds: "1.5" }],
-      ["a non-numeric prep time", { prepSeconds: "abc" }],
     ])("rejects %s", async (_name, query) => {
       await signIn();
       const res = await upload("x", { query });
@@ -110,13 +112,21 @@ describe("POST /api/recordings", () => {
       expect(await filesStored()).toHaveLength(0);
     });
 
-    it.each(["audio/webm", "image/png", "application/octet-stream", null])(
-      "rejects non-video content type %s",
+    it("stores an audio-only recording with its audio MIME type", async () => {
+      await signIn();
+      const res = await upload("audio-bytes", { contentType: "audio/webm;codecs=opus" });
+
+      expect(res.status).toBe(201);
+      expect((await db.select().from(recordings))[0].mimeType).toBe("audio/webm");
+    });
+
+    it.each(["image/png", "application/octet-stream", "text/plain", null])(
+      "rejects content type %s, which is neither audio nor video",
       async (contentType) => {
         await signIn();
         const res = await upload("x", { contentType });
         expect(res.status).toBe(415);
-        expect(await res.json()).toEqual({ error: "Recordings must be video" });
+        expect(await res.json()).toEqual({ error: "Recordings must be audio or video" });
         expect(await db.select().from(recordings)).toHaveLength(0);
       },
     );

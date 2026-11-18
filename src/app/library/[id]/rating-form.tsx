@@ -3,6 +3,7 @@
 import { useState, useTransition, type FormEvent } from "react";
 import { saveRating, type FormState } from "@/app/actions";
 import type { RecordingRating } from "@/db/schema";
+import type { Mode } from "@/lib/practice";
 
 const CRITERIA = [
   { name: "clarity", label: "Clarity" },
@@ -12,7 +13,11 @@ const CRITERIA = [
   { name: "bodyLanguage", label: "Body language" },
 ] as const;
 
-export function RatingForm({ recordingId, initial }: { recordingId: string; initial: RecordingRating | null }) {
+type Props = { recordingId: string; mode: Mode; initial: RecordingRating | null };
+
+export function RatingForm({ recordingId, mode, initial }: Props) {
+  // Body language can't be judged from an audio-only recording.
+  const criteria = mode === "audio" ? CRITERIA.filter((c) => c.name !== "bodyLanguage") : CRITERIA;
   const [state, setState] = useState<FormState>();
   const [pending, startTransition] = useTransition();
 
@@ -30,7 +35,7 @@ export function RatingForm({ recordingId, initial }: { recordingId: string; init
       <input type="hidden" name="recordingId" value={recordingId} />
 
       <div className="rating-grid">
-        {CRITERIA.map(({ name, label }) => (
+        {criteria.map(({ name, label }) => (
           <fieldset key={name} className="rating-row">
             <legend className="sr-only">{label}</legend>
             <span>{label}</span>

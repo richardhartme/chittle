@@ -28,7 +28,7 @@ async function rateAll(user: ReturnType<typeof userEvent.setup>, value = 4) {
 
 describe("RatingForm", () => {
   it("renders five criteria with options 1 to 5 and a notes field", () => {
-    render(<RatingForm recordingId="rec-1" initial={null} />);
+    render(<RatingForm recordingId="rec-1" mode="video" initial={null} />);
 
     for (const criterion of CRITERIA) {
       const group = screen.getByText(criterion, { selector: "span" }).closest("fieldset")!;
@@ -49,7 +49,7 @@ describe("RatingForm", () => {
       note: "Earlier note",
       updatedAt: new Date(),
     };
-    render(<RatingForm recordingId="rec-1" initial={initial} />);
+    render(<RatingForm recordingId="rec-1" mode="video" initial={initial} />);
 
     expect(screen.getAllByRole("radio", { checked: true }).map((r) => (r as HTMLInputElement).value)).toEqual([
       "1",
@@ -64,7 +64,7 @@ describe("RatingForm", () => {
   it("submits every value along with the recording id", async () => {
     vi.mocked(saveRating).mockResolvedValue({ saved: true });
     const user = userEvent.setup();
-    render(<RatingForm recordingId="rec-1" initial={null} />);
+    render(<RatingForm recordingId="rec-1" mode="video" initial={null} />);
 
     await rate(user, "Clarity", 5);
     await rate(user, "Confidence", 4);
@@ -91,7 +91,7 @@ describe("RatingForm", () => {
   it("keeps what the user entered after saving", async () => {
     vi.mocked(saveRating).mockResolvedValue({ saved: true });
     const user = userEvent.setup();
-    render(<RatingForm recordingId="rec-1" initial={null} />);
+    render(<RatingForm recordingId="rec-1" mode="video" initial={null} />);
 
     await rateAll(user, 4);
     await user.type(screen.getByLabelText("Notes"), "Keep me");
@@ -104,7 +104,7 @@ describe("RatingForm", () => {
 
   it("does not submit until every criterion is rated", async () => {
     const user = userEvent.setup();
-    render(<RatingForm recordingId="rec-1" initial={null} />);
+    render(<RatingForm recordingId="rec-1" mode="video" initial={null} />);
 
     await rate(user, "Clarity", 3);
     await user.click(screen.getByRole("button", { name: "Save" }));
@@ -115,7 +115,7 @@ describe("RatingForm", () => {
   it("shows a server error", async () => {
     vi.mocked(saveRating).mockResolvedValue({ error: "Recording not found." });
     const user = userEvent.setup();
-    render(<RatingForm recordingId="rec-1" initial={null} />);
+    render(<RatingForm recordingId="rec-1" mode="video" initial={null} />);
 
     await rateAll(user);
     await user.click(screen.getByRole("button", { name: "Save" }));
@@ -127,7 +127,7 @@ describe("RatingForm", () => {
   it("clears the 'Saved.' message when the user edits again", async () => {
     vi.mocked(saveRating).mockResolvedValue({ saved: true });
     const user = userEvent.setup();
-    render(<RatingForm recordingId="rec-1" initial={null} />);
+    render(<RatingForm recordingId="rec-1" mode="video" initial={null} />);
     await rateAll(user);
     await user.click(screen.getByRole("button", { name: "Save" }));
     await screen.findByText("Saved.");
@@ -142,7 +142,35 @@ describe("RatingForm", () => {
   });
 
   it("limits notes to 5000 characters", () => {
-    render(<RatingForm recordingId="rec-1" initial={null} />);
+    render(<RatingForm recordingId="rec-1" mode="video" initial={null} />);
     expect(screen.getByLabelText("Notes")).toHaveAttribute("maxlength", "5000");
+  });
+});
+
+describe("RatingForm for an audio-only recording", () => {
+  it("leaves out body language, which can't be judged without video", () => {
+    render(<RatingForm recordingId="rec-1" mode="audio" initial={null} />);
+    expect(screen.queryByText("Body language", { selector: "span" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("radio")).toHaveLength(20);
+  });
+
+  it("submits the other four criteria", async () => {
+    vi.mocked(saveRating).mockResolvedValue({ saved: true });
+    const user = userEvent.setup();
+    render(<RatingForm recordingId="rec-1" mode="audio" initial={null} />);
+
+    for (const criterion of CRITERIA.slice(0, 4)) await rate(user, criterion, 3);
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByText("Saved.")).toBeInTheDocument();
+    const [, formData] = vi.mocked(saveRating).mock.calls[0];
+    expect(Object.fromEntries(formData)).toEqual({
+      recordingId: "rec-1",
+      clarity: "3",
+      confidence: "3",
+      structure: "3",
+      pacing: "3",
+      note: "",
+    });
   });
 });
