@@ -59,4 +59,22 @@ export function resetNextMocks(): void {
   cookieStore.delete.mockClear();
   redirect.mockClear();
   refresh.mockClear();
+  after.mockClear();
+}
+
+/**
+ * Stand-in for `next/server`'s `after()`: callbacks run straight away, and `afterSettled()` waits for them.
+ *
+ *   vi.mock("next/server", async () => (await import("@/test/next")).serverMock);
+ */
+const afterTasks: Promise<unknown>[] = [];
+
+export const after = vi.fn((task: () => unknown) => {
+  afterTasks.push(Promise.resolve().then(task));
+});
+
+export const serverMock = { after };
+
+export async function afterSettled(): Promise<void> {
+  await Promise.all(afterTasks.splice(0));
 }

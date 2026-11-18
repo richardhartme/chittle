@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { recordings, topics } from "@/db/schema";
+import { startAssessment } from "@/lib/assessment";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getStorage } from "@/lib/storage";
 
@@ -21,7 +22,8 @@ const EXTENSIONS: Record<string, string> = {
 
 /**
  * Uploads a recording. The request body is the raw audio or video stream, its
- * Content-Type is the recorder's MIME type, and metadata travels in the query.
+ * Content-Type is the recorder's MIME type, and metadata travels in the query. If the speaker has
+ * saved their provider keys, assessment starts in the background.
  */
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -64,6 +66,13 @@ export async function POST(request: Request) {
   } catch (err) {
     await storage.delete(storageKey);
     throw err;
+  }
+
+  // The recording is saved either way, so a failure to start assessing mustn't fail the upload.
+  try {
+    await startAssessment({ id, userId: user.id });
+  } catch (err) {
+    console.error(`Couldn't start assessing recording ${id}:`, err instanceof Error ? err.message : err);
   }
 
   return Response.json({ id }, { status: 201 });

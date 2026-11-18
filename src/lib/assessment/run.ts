@@ -1,0 +1,56 @@
+import { eq, sql } from "drizzle-orm";
+import { db } from "@/db";
+import { assessments, recordings, transcripts } from "@/db/schema";
+import { transcribe } from "./deepgram";
+import { AssessmentError } from "./errors";
+
+export type AssessmentKeys = { deepgram: string; anthropic: string };
+
+const UNEXPECTED = "Something went wrong while assessing this recording, try again.";
+
+/**
+ * Runs the assessment pipeline for a recording whose assessment has been claimed. Never throws: any
+ * failure is stored on the assessment as a message that's safe to show the speaker.
+ */
+export async function runAssessment(recordingId: string, keys: AssessmentKeys): Promise<void> {
+  try {
+    const [recording] = await db.select().from(recordings).where(eq(recordings.id, recordingId));
+    if (!recording) return; // Deleted since the assessment started.
+
+    const [existing] = await db
+      .select({ recordingId: transcripts.recordingId })
+      .from(transcripts)
+      .where(eq(transcripts.recordingId, recordingId));
+    if (!existing) {
+      const transcript = await transcribe(recording, keys.deepgram);
+      await db
+        .insert(transcripts)
+        .values({ recordingId, ...transcript })
+        .onConflictDoNothing();
+    }
+
+    // Measuring and judging come in later slices. For now a transcript completes the assessment.
+    await finish(recordingId, { status: "done", error: null });
+  } catch (err) {
+    if (!(err instanceof AssessmentError)) {
+      console.error(`Assessment of recording ${recordingId} failed:`, redact(summarise(err), keys));
+    }
+    await finish(recordingId, { status: "failed", error: err instanceof AssessmentError ? err.message : UNEXPECTED }).catch(
+      (finishErr) => console.error("Couldn't record the failed assessment:", redact(summarise(finishErr), keys)),
+    );
+  }
+}
+
+async function finish(recordingId: string, outcome: { status: "done" | "failed"; error: string | null }) {
+  await db
+    .update(assessments)
+    .set({ ...outcome, completedAt: sql`now()` })
+    .where(eq(assessments.recordingId, recordingId));
+}
+
+const summarise = (err: unknown) => (err instanceof Error ? `${err.name}: ${err.message}` : String(err));
+
+/** Strips the speaker's keys out of text bound for the logs. */
+function redact(text: string, keys: AssessmentKeys): string {
+  return Object.values(keys).reduce((out, key) => (key ? out.replaceAll(key, "[redacted]") : out), text);
+}

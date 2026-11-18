@@ -1,6 +1,8 @@
 import {
+  doublePrecision,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   primaryKey,
@@ -113,8 +115,53 @@ export const providerKeys = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.provider] })],
 );
 
+/** One word as Deepgram heard it, with its timing in seconds and how sure it was (0 to 1). */
+export type TranscriptWord = {
+  word: string;
+  punctuated_word: string;
+  start: number;
+  end: number;
+  confidence: number;
+};
+
+export const transcripts = pgTable("transcripts", {
+  recordingId: uuid("recording_id")
+    .primaryKey()
+    .references(() => recordings.id, { onDelete: "cascade" }),
+  text: text("text").notNull(),
+  words: jsonb("words").$type<TranscriptWord[]>().notNull(),
+  audioSeconds: doublePrecision("audio_seconds").notNull(),
+  createdAt: createdAt(),
+});
+
+export const assessmentStatus = pgEnum("assessment_status", ["pending", "done", "failed"]);
+
+export const assessments = pgTable("assessments", {
+  recordingId: uuid("recording_id")
+    .primaryKey()
+    .references(() => recordings.id, { onDelete: "cascade" }),
+  status: assessmentStatus("status").notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  // A short message that's safe to show the speaker. Never contains a provider key.
+  error: text("error"),
+  // The dimension scores and result stay null until scoring is added.
+  scoringVersion: integer("scoring_version"),
+  totalScore: integer("total_score"),
+  structureScore: integer("structure_score"),
+  concisenessScore: integer("conciseness_score"),
+  confidenceScore: integer("confidence_score"),
+  pronunciationScore: integer("pronunciation_score"),
+  fillerRateScore: integer("filler_rate_score"),
+  paceScore: integer("pace_score"),
+  result: jsonb("result"),
+});
+
 export type User = typeof users.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type Topic = typeof topics.$inferSelect;
 export type Recording = typeof recordings.$inferSelect;
 export type Provider = (typeof provider.enumValues)[number];
+export type Transcript = typeof transcripts.$inferSelect;
+export type Assessment = typeof assessments.$inferSelect;
+export type AssessmentStatus = (typeof assessmentStatus.enumValues)[number];

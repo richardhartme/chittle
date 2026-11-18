@@ -2,7 +2,8 @@ import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { Suspense } from "react";
 import { db } from "@/db";
-import { recordings, topics } from "@/db/schema";
+import { assessments, recordings, topics } from "@/db/schema";
+import { assessmentStateColumns, toAssessmentState } from "@/lib/assessment/status";
 import { requireUser } from "@/lib/auth/session";
 import { formatDate, formatDuration } from "@/lib/format";
 import { recordingMode } from "@/lib/practice";
@@ -24,9 +25,11 @@ async function Library() {
       durationSeconds: recordings.durationSeconds,
       mimeType: recordings.mimeType,
       topic: topics.text,
+      assessment: assessmentStateColumns,
     })
     .from(recordings)
     .innerJoin(topics, eq(topics.id, recordings.topicId))
+    .leftJoin(assessments, eq(assessments.recordingId, recordings.id))
     .where(eq(recordings.userId, user.id))
     .orderBy(desc(recordings.createdAt));
 
@@ -46,6 +49,7 @@ async function Library() {
                 <div className="muted">
                   <span className="tag">{recordingMode(row.mimeType) === "audio" ? "Audio" : "Video"}</span>
                   {formatDate(row.createdAt)} · {formatDuration(row.durationSeconds)}
+                  {assessmentLabel(toAssessmentState(row.assessment).status)}
                 </div>
               </Link>
             </li>
@@ -54,4 +58,10 @@ async function Library() {
       )}
     </>
   );
+}
+
+function assessmentLabel(status: string) {
+  if (status === "pending") return " · Analysing…";
+  if (status === "none") return " · Not assessed";
+  return null;
 }
