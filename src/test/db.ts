@@ -3,6 +3,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import * as schema from "@/db/schema";
+import type { FrameworkId } from "@/lib/frameworks";
 
 /**
  * An in-process Postgres (PGlite) with the real migrations applied, so tests exercise the same SQL,
@@ -26,8 +27,8 @@ export async function createUser(email = `user-${unique()}@example.com`) {
   return user;
 }
 
-export async function createCategory(slug = `cat-${unique()}`, name = slug) {
-  const [category] = await db.insert(schema.categories).values({ slug, name }).returning();
+export async function createCategory(slug = `cat-${unique()}`, name = slug, framework: FrameworkId = "prep") {
+  const [category] = await db.insert(schema.categories).values({ slug, name, framework }).returning();
   return category;
 }
 

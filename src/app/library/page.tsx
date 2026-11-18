@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { db } from "@/db";
 import { assessments, recordings, topics } from "@/db/schema";
+import { MAX_TOTAL } from "@/lib/assessment/dimensions";
 import { assessmentStateColumns, toAssessmentState, type AssessmentState } from "@/lib/assessment/status";
 import { requireUser } from "@/lib/auth/session";
 import { formatDate, formatDuration } from "@/lib/format";
@@ -26,6 +27,7 @@ async function Library() {
       mimeType: recordings.mimeType,
       topic: topics.text,
       assessment: assessmentStateColumns,
+      totalScore: assessments.totalScore,
     })
     .from(recordings)
     .innerJoin(topics, eq(topics.id, recordings.topicId))
@@ -49,7 +51,7 @@ async function Library() {
                 <div className="muted">
                   <span className="tag">{recordingMode(row.mimeType) === "audio" ? "Audio" : "Video"}</span>
                   {formatDate(row.createdAt)} · {formatDuration(row.durationSeconds)}
-                  {assessmentLabel(toAssessmentState(row.assessment).status)}
+                  {assessmentLabel(toAssessmentState(row.assessment).status, row.totalScore)}
                 </div>
               </Link>
             </li>
@@ -60,8 +62,10 @@ async function Library() {
   );
 }
 
-function assessmentLabel(status: AssessmentState["status"]) {
+function assessmentLabel(status: AssessmentState["status"], totalScore: number | null) {
   if (status === "pending") return " · Analysing…";
   if (status === "none") return " · Not assessed";
+  // Assessments from before judging was added are done without a total.
+  if (status === "done" && totalScore !== null) return ` · ${totalScore}/${MAX_TOTAL}`;
   return null;
 }

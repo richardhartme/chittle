@@ -2,10 +2,14 @@ import { eq, sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { assessments, transcripts } from "@/db/schema";
 import { createCategory, createRecording, createTopic, createUser, db, resetDb } from "@/test/db";
+import { claudeFails, claudeReplies, stream } from "@/test/claude";
+import { judgementFixture } from "@/test/judgement";
 import { streamOf, withTempStorage } from "@/test/storage";
 
 vi.mock("@/db", async () => ({ db: (await import("@/test/db")).db }));
+vi.mock("@anthropic-ai/sdk", async (importOriginal) => (await import("@/test/claude")).anthropicMock(importOriginal));
 
+import Anthropic, { AuthenticationError, InternalServerError } from "@anthropic-ai/sdk";
 import { claimAssessment } from "./claim";
 import { runAssessment } from "./run";
 
@@ -17,8 +21,12 @@ let claim: Date;
 
 beforeEach(async () => {
   await resetDb();
+  vi.mocked(Anthropic).mockClear();
+  stream.mockClear();
+  claudeReplies(judgementFixture());
   const user = await createUser();
-  const topic = await createTopic((await createCategory()).id);
+  const category = await createCategory("interview", "Interview", "star");
+  const topic = await createTopic(category.id, "Tell me about a project you are proud of.");
   const recording = await createRecording(user.id, topic.id, { mimeType: "audio/webm" });
   await temp.storage().put(recording.storageKey, streamOf("audio-bytes"));
   recordingId = recording.id;
@@ -77,7 +85,28 @@ describe("runAssessment", () => {
     expect(row.completedAt).toBeInstanceOf(Date);
   });
 
-  it("measures the transcript and stores the measured scores and metrics, leaving the total for judging", async () => {
+  it("judges the recording with Claude, using the speaker's Anthropic key and the category's framework", async () => {
+    deepgramReplies(success());
+
+    await runAssessment(recordingId, claim, keys);
+
+    expect(Anthropic).toHaveBeenCalledWith(expect.objectContaining({ apiKey: "sk-secret-key" }));
+    expect(stream).toHaveBeenCalledTimes(1);
+    const request = stream.mock.calls[0][0];
+    expect(request).toMatchObject({
+      model: "claude-opus-5-5",
+      fallbacks: "default",
+      betas: ["server-side-fallback-2026-07-01"],
+      thinking: { type: "adaptive" },
+      output_config: { effort: "high", format: { type: "json_schema" } },
+    });
+    const message = request.messages[0].content;
+    expect(message).toContain("Tell me about a project you are proud of.");
+    expect(message).toContain("STAR");
+    expect(message).toContain("Um, hello.");
+  });
+
+  it("stores a done assessment with every score, the total and the feedback, at scoring version 2", async () => {
     deepgramReplies(success());
 
     await runAssessment(recordingId, claim, keys);
@@ -85,17 +114,60 @@ describe("runAssessment", () => {
     const row = await assessment();
     expect(row).toMatchObject({
       status: "done",
-      scoringVersion: 1,
-      fillerRateScore: 0, // 1 filler in 2 words
+      error: null,
+      scoringVersion: 2,
+      structureScore: 200, // five sub-scores of 40
+      concisenessScore: 120,
+      confidenceScore: 80,
       pronunciationScore: 150, // "hello" heard clearly
-      totalScore: null,
-      structureScore: null,
-      concisenessScore: null,
-      confidenceScore: null,
+      fillerRateScore: 0, // 1 filler in 2 words
+      paceScore: 0, // too few words to have a pace
+      totalScore: 550,
     });
-    const { measured } = row.result as { measured: { fillers: unknown; subScores: Record<string, number> } };
-    expect(measured.fillers).toMatchObject({ total: 1, breakdown: [{ word: "um", count: 1 }] });
-    expect(row.paceScore).toBe(measured.subScores.pauseTiming + measured.subScores.wordsPerMinute);
+    expect(row.result?.measured.fillers).toMatchObject({ total: 1, breakdown: [{ word: "um", count: 1 }] });
+    expect(row.result?.judged).toMatchObject({
+      overview: "A clear answer that could open more strongly.",
+      strengths: ["Clear example"],
+      areasToImprove: ["Open with your point", "Cut the hedges"],
+      dimensions: { structure: { summary: "Structure summary." } },
+    });
+  });
+
+  it("marks the assessment failed when Anthropic rejects the key", async () => {
+    deepgramReplies(success());
+    claudeFails(new AuthenticationError(401, { type: "error" }, "invalid x-api-key", new Headers()));
+
+    await runAssessment(recordingId, claim, keys);
+
+    expect(await assessment()).toMatchObject({ status: "failed", error: "Anthropic rejected the key.", totalScore: null });
+    expect(await transcript()).toBeDefined(); // kept, so Retry needn't transcribe again
+  });
+
+  it("marks the assessment failed when Claude declines to assess it", async () => {
+    deepgramReplies(success());
+    claudeReplies("", "refusal");
+
+    await runAssessment(recordingId, claim, keys);
+
+    expect(await assessment()).toMatchObject({ status: "failed", error: "The assessment was declined." });
+  });
+
+  it.each([
+    ["Claude errors", () => claudeFails(new InternalServerError(500, { type: "error" }, "overloaded", new Headers()))],
+    ["Claude's reply is cut off", () => claudeReplies('{"structure":', "max_tokens")],
+    ["Claude's reply doesn't match the schema", () => claudeReplies({ overview: "Only this." })],
+  ])("marks the assessment failed with a generic message when %s", async (_, arrange) => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    deepgramReplies(success());
+    arrange();
+
+    await runAssessment(recordingId, claim, keys);
+
+    expect(await assessment()).toMatchObject({
+      status: "failed",
+      error: "Something went wrong while assessing this recording, try again.",
+    });
+    log.mockRestore();
   });
 
   it("measures an already-stored transcript", async () => {
@@ -105,7 +177,7 @@ describe("runAssessment", () => {
 
     await runAssessment(recordingId, claim, keys);
 
-    expect(await assessment()).toMatchObject({ status: "done", scoringVersion: 1, pronunciationScore: 0 });
+    expect(await assessment()).toMatchObject({ status: "done", scoringVersion: 2, pronunciationScore: 0 });
   });
 
   it("falls back to the plain word when Deepgram leaves out the punctuated one", async () => {
@@ -179,6 +251,18 @@ describe("runAssessment", () => {
 
     expect((await assessment()).error).not.toContain(keys.deepgram);
     expect(JSON.stringify(log.mock.calls)).not.toContain(keys.deepgram);
+    log.mockRestore();
+  });
+
+  it("never puts the Anthropic key in the stored error or the logs", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    deepgramReplies(success());
+    claudeFails(new Error(`boom ${keys.anthropic}`));
+
+    await runAssessment(recordingId, claim, keys);
+
+    expect((await assessment()).error).not.toContain(keys.anthropic);
+    expect(JSON.stringify(log.mock.calls)).not.toContain(keys.anthropic);
     log.mockRestore();
   });
 

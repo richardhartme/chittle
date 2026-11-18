@@ -9,11 +9,11 @@ async function main() {
   const { db } = await import("./index");
   const { categories, topics } = await import("./schema");
 
-  for (const { slug, name, topics: texts } of seedCategories) {
+  for (const { slug, name, framework, topics: texts } of seedCategories) {
     const [category] = await db
       .insert(categories)
-      .values({ slug, name })
-      .onConflictDoUpdate({ target: categories.slug, set: { name } })
+      .values({ slug, name, framework })
+      .onConflictDoUpdate({ target: categories.slug, set: { name, framework } })
       .returning();
 
     await db

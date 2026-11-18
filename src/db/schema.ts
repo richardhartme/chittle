@@ -12,6 +12,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import type { AssessmentResult } from "@/lib/assessment/result";
+import { FRAMEWORK_IDS } from "@/lib/frameworks";
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 
@@ -44,10 +45,14 @@ export const sessions = pgTable(
   (t) => [index("sessions_user_id_idx").on(t.userId)],
 );
 
+export const framework = pgEnum("framework", FRAMEWORK_IDS);
+
 export const categories = pgTable("categories", {
   id: uuid("id").primaryKey().defaultRandom(),
   slug: text("slug").notNull().unique(),
   name: text("name").notNull(),
+  // The answer structure its recordings are judged against (see src/lib/frameworks.ts).
+  framework: framework("framework").notNull(),
 });
 
 export const topicSource = pgEnum("topic_source", ["predefined", "generated"]);
@@ -146,7 +151,8 @@ export const assessments = pgTable("assessments", {
   completedAt: timestamp("completed_at", { withTimezone: true }),
   // A short message that's safe to show the speaker. Never contains a provider key.
   error: text("error"),
-  // Null until the assessment is done. The judged scores and total stay null until judging is added.
+  // Null until the assessment is done. Scoring version 1 (measured dimensions only) left the judged
+  // scores and the total null.
   scoringVersion: integer("scoring_version"),
   totalScore: integer("total_score"),
   structureScore: integer("structure_score"),

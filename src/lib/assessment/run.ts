@@ -1,13 +1,18 @@
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { assessments, recordings, transcripts } from "@/db/schema";
+import { assessments, categories, recordings, topics, transcripts } from "@/db/schema";
 import { transcribe } from "./deepgram";
 import { AssessmentError } from "./errors";
+import { judge } from "./judge";
 import { measure } from "./measure";
 import type { AssessmentResult } from "./result";
+import { scoreJudgement } from "./score";
 
-/** Bump when the scoring rules or prompts change. Version 1 has the measured dimensions only. */
-export const SCORING_VERSION = 1;
+/**
+ * Bump when the scoring rules or prompts change. Version 1 had the measured dimensions only; version 2
+ * adds Claude's judged dimensions, the feedback and the total.
+ */
+export const SCORING_VERSION = 2;
 
 export type AssessmentKeys = { deepgram: string; anthropic: string };
 
@@ -19,11 +24,17 @@ const UNEXPECTED = "Something went wrong while assessing this recording, try aga
  */
 export async function runAssessment(recordingId: string, claimedAt: Date, keys: AssessmentKeys): Promise<void> {
   try {
-    const [recording] = await db.select().from(recordings).where(eq(recordings.id, recordingId));
-    if (!recording) return; // Deleted since the assessment started.
+    const [row] = await db
+      .select({ recording: recordings, topic: topics.text, category: categories.name, framework: categories.framework })
+      .from(recordings)
+      .innerJoin(topics, eq(topics.id, recordings.topicId))
+      .innerJoin(categories, eq(categories.id, topics.categoryId))
+      .where(eq(recordings.id, recordingId));
+    if (!row) return; // Deleted since the assessment started.
+    const { recording } = row;
 
     let [transcript] = await db
-      .select({ words: transcripts.words, audioSeconds: transcripts.audioSeconds })
+      .select({ text: transcripts.text, words: transcripts.words, audioSeconds: transcripts.audioSeconds })
       .from(transcripts)
       .where(eq(transcripts.recordingId, recordingId));
     if (!transcript) {
@@ -35,16 +46,25 @@ export async function runAssessment(recordingId: string, claimedAt: Date, keys: 
       transcript = fresh;
     }
 
-    // Judging the other three dimensions, and so the total score, comes in a later slice.
-    const measured = measure(transcript.words, transcript.audioSeconds);
+    const { words, audioSeconds: durationSeconds } = transcript;
+    const measured = measure(words, durationSeconds);
+    const judgement = await judge(
+      { topic: row.topic, category: row.category, framework: row.framework, transcript: transcript.text, durationSeconds, measured },
+      keys.anthropic,
+    );
+    const { scores, total, judged } = scoreJudgement({ judgement, measured, words, durationSeconds });
     await finish(recordingId, claimedAt, {
       status: "done",
       error: null,
       scoringVersion: SCORING_VERSION,
-      paceScore: measured.scores.pace,
-      fillerRateScore: measured.scores.fillerRate,
-      pronunciationScore: measured.scores.pronunciation,
-      result: { measured } satisfies AssessmentResult,
+      totalScore: total,
+      structureScore: scores.structure,
+      concisenessScore: scores.conciseness,
+      confidenceScore: scores.confidence,
+      pronunciationScore: scores.pronunciation,
+      fillerRateScore: scores.fillerRate,
+      paceScore: scores.pace,
+      result: { measured, judged } satisfies AssessmentResult,
     });
   } catch (err) {
     if (!(err instanceof AssessmentError)) {

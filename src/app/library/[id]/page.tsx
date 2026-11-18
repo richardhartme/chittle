@@ -13,7 +13,8 @@ import { formatDate, formatDuration } from "@/lib/format";
 import { recordingMode } from "@/lib/practice";
 import { AssessmentPoller } from "./assessment-poller";
 import { DeleteForm } from "./delete-form";
-import { MeasuredScores } from "./measured-scores";
+import { DimensionScores } from "./dimension-scores";
+import { OverallResult } from "./overall-result";
 
 export default function RecordingPage({ params }: PageProps<"/library/[id]">) {
   return (
@@ -86,23 +87,34 @@ async function AssessmentPanel({
     const [row] = await db
       .select({
         transcript: transcripts.text,
-        pace: assessments.paceScore,
-        fillerRate: assessments.fillerRateScore,
-        pronunciation: assessments.pronunciationScore,
+        total: assessments.totalScore,
+        scores: {
+          structure: assessments.structureScore,
+          conciseness: assessments.concisenessScore,
+          confidence: assessments.confidenceScore,
+          pronunciation: assessments.pronunciationScore,
+          fillerRate: assessments.fillerRateScore,
+          pace: assessments.paceScore,
+        },
         result: assessments.result,
       })
       .from(assessments)
       .leftJoin(transcripts, eq(transcripts.recordingId, assessments.recordingId))
       .where(eq(assessments.recordingId, recordingId));
+    const judged = row?.result?.judged;
     return (
       <>
-        {/* Assessments from before measuring was added have no result. */}
-        {row?.result && (
-          <MeasuredScores
-            scores={{ pace: row.pace, fillerRate: row.fillerRate, pronunciation: row.pronunciation }}
-            measured={row.result.measured}
+        {/* Assessments from before judging was added have no total or feedback. */}
+        {judged && row.total !== null && (
+          <OverallResult
+            total={row.total}
+            overview={judged.overview}
+            strengths={judged.strengths}
+            areasToImprove={judged.areasToImprove}
           />
         )}
+        {/* Assessments from before measuring was added have no result. */}
+        {row?.result && <DimensionScores scores={row.scores} measured={row.result.measured} judged={judged} />}
         <section className="card stack">
           <h2>Transcript</h2>
           <p>{row?.transcript ?? "No transcript was stored."}</p>
