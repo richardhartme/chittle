@@ -68,7 +68,12 @@ export async function transcribe(
   }
 
   const url = new URL(LISTEN_URL);
-  url.search = new URLSearchParams({ model: "nova-3", language: "en", filler_words: "true", punctuate: "true" }).toString();
+  url.search = new URLSearchParams({
+    model: "nova-3",
+    language: "en",
+    filler_words: "true",
+    punctuate: "true",
+  }).toString();
 
   let res: Response;
   try {

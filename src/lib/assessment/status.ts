@@ -1,11 +1,12 @@
 import { sql } from "drizzle-orm";
 import { assessments, type AssessmentStatus } from "@/db/schema";
-import { STALE_AFTER_MINUTES } from "./claim";
+
+/** How long an assessment may stay pending before it's treated as failed and can be claimed again. */
+export const STALE_AFTER_MINUTES = 5;
 
 /** An assessment as the speaker sees it. `none` means the recording hasn't been assessed. */
 export type AssessmentState =
-  | { status: "none" | "pending" | "done"; error: null }
-  | { status: "failed"; error: string };
+  { status: "none" | "pending" | "done"; error: null } | { status: "failed"; error: string };
 
 export const STALE_ERROR = "The assessment stopped before it finished.";
 

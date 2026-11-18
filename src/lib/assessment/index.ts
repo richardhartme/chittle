@@ -13,7 +13,8 @@ export async function startAssessment(recording: { id: string; userId: string })
   const { deepgram, anthropic } = await getProviderKeys(recording.userId);
   if (!deepgram || !anthropic) return "missing-keys";
 
-  if (!(await claimAssessment(recording.id))) return "already-running";
-  after(() => runAssessment(recording.id, { deepgram, anthropic }));
+  const claimedAt = await claimAssessment(recording.id);
+  if (!claimedAt) return "already-running";
+  after(() => runAssessment(recording.id, claimedAt, { deepgram, anthropic }));
   return "started";
 }
