@@ -62,7 +62,13 @@ Feedback:
 - Quote the speaker's own words to show what you mean.
 - Be specific and encouraging, but honest: name the most useful change plainly.
 - Strengths and areas to improve are short phrases, not sentences.
-- List hedges, discourse fillers and redundant phrases only as they appear in the transcript, and count only the times they were used that way.`;
+- List hedges, discourse fillers and redundant phrases only as they appear in the transcript, and count only the times they were used that way.
+
+Coach insights rework the speaker's own answer, so they can see a better version of it:
+- How you said it: the answer's main points in the order they were made. Better order: the same points in the order that would land best, with a paragraph on why.
+- Try opening with: one strong first sentence, built from what the speaker went on to say.
+- Shorter ways: pick the wordiest sentences. Give each original exactly as it appears in the transcript, word for word, and a shorter version that keeps its meaning.
+- Ideal version: the speaker's answer rewritten to follow the category's framework, in their own voice. Keep their facts and examples, and don't invent new ones; where they skipped a step, write it from what they did say.`;
 
 const oneDecimal = (n: number) => (Math.round(n * 10) / 10).toString();
 const whole = (n: number) => Math.round(n).toString();
@@ -92,7 +98,8 @@ ${metrics(input.measured)}
 </measured>
 <transcript>
 ${input.transcript}
-</transcript>`;
+</transcript>
+Write the ideal version in ${framework.name}, with one entry for each step, in this order: ${framework.steps.map((step) => step.label).join(", ")}.`;
 }
 
 /**

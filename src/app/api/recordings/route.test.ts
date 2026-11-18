@@ -205,7 +205,7 @@ describe("POST /api/recordings", () => {
 
         const { id } = await res.json();
         expect(fetch).toHaveBeenCalledTimes(1);
-        expect(await db.select().from(assessments)).toMatchObject([{ recordingId: id, status: "done", scoringVersion: 2 }]);
+        expect(await db.select().from(assessments)).toMatchObject([{ recordingId: id, status: "done", scoringVersion: 3 }]);
         expect(await db.select().from(transcripts)).toMatchObject([{ recordingId: id, text: "Hello there." }]);
       });
 

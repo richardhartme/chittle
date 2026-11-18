@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { judgementFixture, wordsOf } from "@/test/judgement";
+import type { Judgement } from "./judgement";
 import { measure } from "./measure";
 import { scoreJudgement } from "./score";
 
@@ -120,5 +121,58 @@ describe("scoreJudgement", () => {
       redundantPhrases: ["right now"],
     });
     expect(judged.dimensions.structure.summary).toBe("Structure summary.");
+  });
+
+  describe("coach insights", () => {
+    const withShorterWays = (shorterWays: Judgement["coachInsights"]["shorterWays"]) =>
+      score(judgementFixture({ coachInsights: { ...judgementFixture().coachInsights, shorterWays } })).judged.coachInsights;
+
+    it("works out how many words each shorter way saves", () => {
+      const insights = withShorterWays([{ original: "I think we should ship it right now.", shorter: "Ship it now." }]);
+
+      expect(insights?.shorterWays).toEqual([
+        { original: "I think we should ship it right now.", shorter: "Ship it now.", savedWords: 5 },
+      ]);
+    });
+
+    it("drops shorter ways whose original sentence wasn't spoken, allowing for punctuation and spacing", () => {
+      const insights = withShorterWays([
+        { original: "We should never ship it.", shorter: "Don't ship it." },
+        { original: "the plan is  sort of good — you know", shorter: "The plan is good." },
+        { original: "", shorter: "Nothing." },
+      ]);
+
+      expect(insights?.shorterWays).toEqual([
+        { original: "the plan is  sort of good — you know", shorter: "The plan is good.", savedWords: 4 },
+      ]);
+    });
+
+    it("keeps at most 4 shorter ways, and only those that save words", () => {
+      const insights = withShorterWays([
+        { original: "I think we should ship it right now.", shorter: "I think that we should ship it right now." },
+        { original: "the plan is sort of good", shorter: "the plan is kind of good" },
+        ...["Um, I think", "I think the plan", "sort of good", "you know, and I think", "ship it right now"].map((original) => ({
+          original,
+          shorter: "Yes.",
+        })),
+      ]);
+
+      expect(insights?.shorterWays.map((way) => way.original)).toEqual([
+        "Um, I think",
+        "I think the plan",
+        "sort of good",
+        "you know, and I think",
+      ]);
+    });
+
+    it("takes any quotation marks off the suggested opening, which is shown in quotes", () => {
+      const opening = (tryOpeningWith: string) =>
+        score(judgementFixture({ coachInsights: { ...judgementFixture().coachInsights, tryOpeningWith } })).judged
+          .coachInsights?.tryOpeningWith;
+
+      expect(opening("“We should ship it now.”")).toBe("We should ship it now.");
+      expect(opening(' "Ship it." ')).toBe("Ship it.");
+      expect(opening("Ship the “new” plan.")).toBe("Ship the “new” plan.");
+    });
   });
 });

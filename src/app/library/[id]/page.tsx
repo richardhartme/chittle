@@ -13,6 +13,7 @@ import { hasProviderKeys } from "@/lib/provider-keys";
 import { formatDate, formatDuration } from "@/lib/format";
 import { recordingMode } from "@/lib/practice";
 import { AssessmentPoller } from "./assessment-poller";
+import { CoachInsightsDrawer } from "./coach-insights";
 import { DeleteForm } from "./delete-form";
 import { DimensionCards } from "./dimension-cards";
 import { OverallResult } from "./overall-result";
@@ -129,6 +130,7 @@ async function AssessmentPanel({
         {judged && (
           <OverallResult overview={judged.overview} strengths={judged.strengths} areasToImprove={judged.areasToImprove} />
         )}
+        <CoachInsightsDrawer insights={judged?.coachInsights} />
         <section className="card stack">
           <h2>Transcript</h2>
           <p>{row?.transcript ?? "No transcript was stored."}</p>
