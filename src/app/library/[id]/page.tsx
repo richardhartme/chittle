@@ -7,6 +7,7 @@ import { db } from "@/db";
 import { recordingRatings, recordings, topics } from "@/db/schema";
 import { requireUser } from "@/lib/auth/session";
 import { formatDate, formatDuration } from "@/lib/format";
+import { recordingMode } from "@/lib/practice";
 import { DeleteForm } from "./delete-form";
 import { RatingForm } from "./rating-form";
 
@@ -32,6 +33,8 @@ async function Recording({ params }: Pick<PageProps<"/library/[id]">, "params">)
   if (!row) notFound();
 
   const { recording, topic, rating } = row;
+  const mode = recordingMode(recording.mimeType);
+  const src = `/api/recordings/${recording.id}/file`;
 
   return (
     <div className="stack">
@@ -43,11 +46,15 @@ async function Recording({ params }: Pick<PageProps<"/library/[id]">, "params">)
         {formatDate(recording.createdAt)} · {formatDuration(recording.durationSeconds)}
       </p>
 
-      <video controls preload="metadata" src={`/api/recordings/${recording.id}/file`} />
+      {mode === "audio" ? (
+        <audio controls preload="metadata" src={src} />
+      ) : (
+        <video controls preload="metadata" src={src} />
+      )}
 
       <div className="card stack">
         <h2>How did it go?</h2>
-        <RatingForm recordingId={recording.id} initial={rating} />
+        <RatingForm recordingId={recording.id} mode={mode} initial={rating} />
       </div>
 
       <DeleteForm recordingId={recording.id} />

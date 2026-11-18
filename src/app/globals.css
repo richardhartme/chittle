@@ -352,6 +352,76 @@ video {
   }
 }
 
+/* Time's up: flash for a few seconds, then count the overtime in the warning colour. */
+.countdown.flash,
+.countdown.overtime {
+  color: var(--danger);
+}
+
+.countdown.flash {
+  animation: flash 0.5s steps(1) infinite;
+}
+
+@keyframes flash {
+  50% {
+    opacity: 0.15;
+  }
+}
+
+/* Mode choice on the setup page */
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.choices legend {
+  width: 100%;
+  padding: 0;
+  margin-bottom: 0.35rem;
+  font-size: 0.925rem;
+  font-weight: 500;
+}
+
+.choice {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.choice input {
+  min-height: 0;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  accent-color: var(--indigo);
+}
+
+/* Microphone level for audio-only recording */
+
+.level-meter {
+  height: 0.75rem;
+  border-radius: 999px;
+  background: var(--lavender-soft);
+  overflow: hidden;
+}
+
+.level-meter-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--indigo);
+  transition: width 0.1s linear;
+}
+
+audio {
+  width: 100%;
+}
+
 /* Library */
 
 .recording-list {
@@ -380,6 +450,16 @@ video {
   border-radius: var(--radius);
   text-decoration: none;
   color: inherit;
+}
+
+.tag {
+  display: inline-block;
+  margin-right: 0.5rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.8rem;
 }
 
 .recording-list strong {
@@ -608,8 +688,13 @@ video {
     transform: none;
   }
 
-  .rec-dot {
+  .rec-dot,
+  .countdown.flash {
     animation: none;
+  }
+
+  .level-meter-fill {
+    transition: none;
   }
 
   .hero .button.primary,

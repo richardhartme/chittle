@@ -225,6 +225,54 @@ describe("saveRating", () => {
 
     expect(result?.error).toBeDefined();
   });
+
+  const without = (fields: Record<string, string>, name: string) =>
+    Object.fromEntries(Object.entries(fields).filter(([key]) => key !== name));
+  const withoutBodyLanguage = without(ratings, "bodyLanguage");
+
+  describe("for an audio-only recording", () => {
+
+    it("saves without a body language rating", async () => {
+      const user = await signIn();
+      const recording = await createRecording(user.id, topicId, { mimeType: "audio/webm" });
+
+      const result = await saveRating(undefined, form({ recordingId: recording.id, ...withoutBodyLanguage, note: "" }));
+
+      expect(result).toEqual({ saved: true });
+      const [row] = await db.select().from(recordingRatings);
+      expect(row).toMatchObject({ clarity: 4, confidence: 3, structure: 5, pacing: 2, bodyLanguage: null });
+    });
+
+    it("ignores a body language rating if one is sent anyway", async () => {
+      const user = await signIn();
+      const recording = await createRecording(user.id, topicId, { mimeType: "audio/mp4" });
+
+      await saveRating(undefined, form({ recordingId: recording.id, ...ratings, note: "" }));
+
+      expect((await db.select().from(recordingRatings))[0].bodyLanguage).toBeNull();
+    });
+
+    it("still requires the other criteria", async () => {
+      const user = await signIn();
+      const recording = await createRecording(user.id, topicId, { mimeType: "audio/webm" });
+      const incomplete = without(withoutBodyLanguage, "clarity");
+
+      const result = await saveRating(undefined, form({ recordingId: recording.id, ...incomplete, note: "" }));
+
+      expect(result).toEqual({ error: "Please rate every criterion from 1 to 5." });
+      expect(await db.select().from(recordingRatings)).toHaveLength(0);
+    });
+  });
+
+  it("still requires body language for a video recording", async () => {
+    const user = await signIn();
+    const recording = await createRecording(user.id, topicId, { mimeType: "video/webm" });
+
+    const result = await saveRating(undefined, form({ recordingId: recording.id, ...withoutBodyLanguage, note: "" }));
+
+    expect(result).toEqual({ error: "Please rate every criterion from 1 to 5." });
+    expect(await db.select().from(recordingRatings)).toHaveLength(0);
+  });
 });
 
 describe("deleteRecording", () => {

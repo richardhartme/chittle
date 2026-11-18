@@ -9,17 +9,18 @@ import { getStorage } from "@/lib/storage";
 const querySchema = z.object({
   topicId: z.uuid(),
   durationSeconds: z.coerce.number().int().min(0),
-  prepSeconds: z.coerce.number().int().min(0),
 });
 
 const EXTENSIONS: Record<string, string> = {
   "video/webm": "webm",
   "video/mp4": "mp4",
   "video/x-matroska": "mkv",
+  "audio/webm": "webm",
+  "audio/mp4": "m4a",
 };
 
 /**
- * Uploads a recording. The request body is the raw video stream, its
+ * Uploads a recording. The request body is the raw audio or video stream, its
  * Content-Type is the recorder's MIME type, and metadata travels in the query.
  */
 export async function POST(request: Request) {
@@ -32,8 +33,8 @@ export async function POST(request: Request) {
 
   const contentType = request.headers.get("content-type") ?? "";
   const mimeType = contentType.split(";")[0].trim().toLowerCase();
-  if (!mimeType.startsWith("video/")) {
-    return Response.json({ error: "Recordings must be video" }, { status: 415 });
+  if (!mimeType.startsWith("video/") && !mimeType.startsWith("audio/")) {
+    return Response.json({ error: "Recordings must be audio or video" }, { status: 415 });
   }
   if (!request.body) return Response.json({ error: "Empty upload" }, { status: 400 });
 
@@ -59,7 +60,6 @@ export async function POST(request: Request) {
       mimeType,
       sizeBytes,
       durationSeconds: query.data.durationSeconds,
-      prepSeconds: query.data.prepSeconds,
     });
   } catch (err) {
     await storage.delete(storageKey);

@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { recordings, topics } from "@/db/schema";
 import { requireUser } from "@/lib/auth/session";
 import { formatDate, formatDuration } from "@/lib/format";
+import { recordingMode } from "@/lib/practice";
 
 export default function LibraryPage() {
   return (
@@ -21,6 +22,7 @@ async function Library() {
       id: recordings.id,
       createdAt: recordings.createdAt,
       durationSeconds: recordings.durationSeconds,
+      mimeType: recordings.mimeType,
       topic: topics.text,
     })
     .from(recordings)
@@ -42,6 +44,7 @@ async function Library() {
               <Link href={`/library/${row.id}`}>
                 <strong>{row.topic}</strong>
                 <div className="muted">
+                  <span className="tag">{recordingMode(row.mimeType) === "audio" ? "Audio" : "Video"}</span>
                   {formatDate(row.createdAt)} · {formatDuration(row.durationSeconds)}
                 </div>
               </Link>

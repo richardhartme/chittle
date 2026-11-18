@@ -54,7 +54,6 @@ export async function createRecording(
       mimeType: "video/webm",
       sizeBytes: 1000,
       durationSeconds: 60,
-      prepSeconds: 30,
       ...overrides,
     })
     .returning();

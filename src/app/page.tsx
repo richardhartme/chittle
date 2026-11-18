@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 
 const STEPS = [
   { title: "Get a topic", body: "Pick a category and we'll give you something to talk about. Not feeling it? Roll again." },
-  { title: "Record yourself", body: "Take your prep time, then speak to your camera for as long as you chose." },
+  { title: "Record yourself", body: "Prepare for as long as you like, then speak on camera or with audio only." },
   { title: "Watch and rate", body: "Play it back, score your clarity, confidence and more, and see how you improve." },
 ];
 
