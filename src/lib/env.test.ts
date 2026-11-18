@@ -74,6 +74,13 @@ describe("env", () => {
     expect(env.topicModel).toBe("some-model");
   });
 
+  it("returns ENCRYPTION_KEY, treating empty as unset", () => {
+    vi.stubEnv("ENCRYPTION_KEY", "");
+    expect(env.encryptionKey).toBeUndefined();
+    vi.stubEnv("ENCRYPTION_KEY", "a2V5");
+    expect(env.encryptionKey).toBe("a2V5");
+  });
+
   it("detects production", () => {
     vi.stubEnv("NODE_ENV", "production");
     expect(env.isProduction).toBe(true);

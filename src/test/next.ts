@@ -5,6 +5,7 @@ import { vi } from "vitest";
  *
  *   vi.mock("next/headers", async () => (await import("@/test/next")).headersMock);
  *   vi.mock("next/navigation", async () => (await import("@/test/next")).navigationMock);
+ *   vi.mock("next/cache", async () => (await import("@/test/next")).cacheMock);
  */
 export const cookieJar = new Map<string, { value: string; options?: Record<string, unknown> }>();
 
@@ -36,6 +37,11 @@ export const redirect = vi.fn((location: string): never => {
 
 export const navigationMock = { redirect, useRouter: () => ({ push: vi.fn() }) };
 
+/** `refresh()` only works inside a real Server Action request, so it's a no-op spy here. */
+export const refresh = vi.fn();
+
+export const cacheMock = { refresh };
+
 /** Runs `fn` and returns the location it redirected to, or null if it didn't redirect. */
 export async function redirectedTo(fn: () => unknown): Promise<string | null> {
   try {
@@ -52,4 +58,5 @@ export function resetNextMocks(): void {
   cookieStore.set.mockClear();
   cookieStore.delete.mockClear();
   redirect.mockClear();
+  refresh.mockClear();
 }

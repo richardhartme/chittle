@@ -1,25 +1,39 @@
+import { randomBytes } from "node:crypto";
 import { stat } from "node:fs/promises";
 import path from "node:path";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { magicLinks, recordings, sessions, userSeenTopics, users } from "@/db/schema";
+import { magicLinks, providerKeys, recordings, sessions, userSeenTopics, users } from "@/db/schema";
 import { hashToken } from "@/lib/auth/tokens";
 import { signIn } from "@/test/auth";
 import { createCategory, createRecording, createTopic, createUser, db, resetDb } from "@/test/db";
-import { cookieJar, redirectedTo, resetNextMocks } from "@/test/next";
+import { cookieJar, redirectedTo, refresh, resetNextMocks } from "@/test/next";
 import { streamOf, withTempStorage } from "@/test/storage";
 
 vi.mock("@/db", async () => ({ db: (await import("@/test/db")).db }));
 vi.mock("next/headers", async () => (await import("@/test/next")).headersMock);
 vi.mock("next/navigation", async () => (await import("@/test/next")).navigationMock);
 vi.mock("@/lib/auth/email", () => ({ sendMagicLinkEmail: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("next/cache", async () => (await import("@/test/next")).cacheMock);
 
+const listModels = vi.fn();
+vi.mock("@anthropic-ai/sdk", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@anthropic-ai/sdk")>()),
+  default: vi.fn(function (this: { models: { list: typeof listModels } }) {
+    this.models = { list: listModels };
+  }),
+}));
+
+import Anthropic, { APIConnectionError, AuthenticationError, PermissionDeniedError } from "@anthropic-ai/sdk";
 import { sendMagicLinkEmail } from "@/lib/auth/email";
+import { getProviderKeys } from "@/lib/provider-keys";
 import {
   deleteAccount,
   deleteRecording,
   logout,
+  removeProviderKey,
   requestLoginLink,
+  saveProviderKey,
   verifyLoginLink,
 } from "./actions";
 
@@ -207,6 +221,9 @@ describe("deleteAccount", () => {
     const recording = await createRecording(user.id, topicId);
     await temp.storage().put(recording.storageKey, streamOf("video"));
     await db.insert(userSeenTopics).values({ userId: user.id, topicId });
+    await db
+      .insert(providerKeys)
+      .values({ userId: user.id, provider: "deepgram", encryptedKey: "ciphertext", keyHint: "abcd" });
 
     expect(await redirectedTo(() => deleteAccount(form({ confirm: "me@example.com" })))).toBe("/");
 
@@ -214,6 +231,7 @@ describe("deleteAccount", () => {
     expect(await db.select().from(sessions)).toHaveLength(0);
     expect(await db.select().from(recordings)).toHaveLength(0);
     expect(await db.select().from(userSeenTopics)).toHaveLength(0);
+    expect(await db.select().from(providerKeys)).toHaveLength(0);
     await expect(stat(path.join(temp.root, user.id))).rejects.toThrow();
     expect(cookieJar.has("chittle_session")).toBe(false);
   });
@@ -229,5 +247,151 @@ describe("deleteAccount", () => {
     expect((await db.select().from(users)).map((u) => u.id)).toEqual([other.id]);
     expect(await db.select().from(recordings)).toHaveLength(1);
     await expect(stat(path.join(temp.root, otherRecording.storageKey))).resolves.toBeDefined();
+  });
+});
+
+describe("saveProviderKey", () => {
+  const deepgramFetch = vi.fn<typeof fetch>();
+
+  beforeEach(() => {
+    vi.stubEnv("ENCRYPTION_KEY", randomBytes(32).toString("base64"));
+    deepgramFetch.mockReset().mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", deepgramFetch);
+    listModels.mockReset().mockResolvedValue({ data: [] });
+  });
+
+  const save = (fields: Record<string, string>) => saveProviderKey(undefined, form(fields));
+
+  it("checks a Deepgram key against Deepgram and stores it encrypted with its last four characters", async () => {
+    const user = await signIn();
+
+    expect(await save({ provider: "deepgram", key: "dg-secret-abcd" })).toEqual({ saved: true });
+
+    const [url, init] = deepgramFetch.mock.calls[0];
+    expect(String(url)).toBe("https://api.deepgram.com/v1/projects");
+    expect(new Headers(init?.headers).get("authorization")).toBe("Token dg-secret-abcd");
+
+    const [row] = await db.select().from(providerKeys);
+    expect(row).toMatchObject({ userId: user.id, provider: "deepgram", keyHint: "abcd" });
+    expect(row.encryptedKey).not.toContain("dg-secret");
+    expect(refresh).toHaveBeenCalled();
+  });
+
+  it("checks an Anthropic key by listing models with it", async () => {
+    const user = await signIn();
+
+    expect(await save({ provider: "anthropic", key: "sk-ant-secret-wxyz" })).toEqual({ saved: true });
+
+    expect(Anthropic).toHaveBeenLastCalledWith(expect.objectContaining({ apiKey: "sk-ant-secret-wxyz" }));
+    expect(listModels).toHaveBeenCalled();
+    expect(await getProviderKeys(user.id)).toEqual({ anthropic: "sk-ant-secret-wxyz" });
+  });
+
+  it("trims whitespace pasted around the key", async () => {
+    const user = await signIn();
+    await save({ provider: "deepgram", key: "  dg-secret-abcd\n" });
+    expect(await getProviderKeys(user.id)).toEqual({ deepgram: "dg-secret-abcd" });
+  });
+
+  it.each([401, 403])("rejects a Deepgram key the provider answers %i to, without storing it", async (status) => {
+    await signIn();
+    deepgramFetch.mockResolvedValue(new Response("{}", { status }));
+
+    expect(await save({ provider: "deepgram", key: "dg-wrong" })).toEqual({ error: "That key wasn't accepted." });
+    expect(await db.select().from(providerKeys)).toHaveLength(0);
+  });
+
+  it.each([
+    ["401", new AuthenticationError(401, undefined, "invalid x-api-key", new Headers())],
+    ["403", new PermissionDeniedError(403, undefined, "forbidden", new Headers())],
+  ])("rejects an Anthropic key the provider answers %s to, without storing it", async (_status, error) => {
+    await signIn();
+    listModels.mockRejectedValue(error);
+
+    expect(await save({ provider: "anthropic", key: "sk-wrong" })).toEqual({ error: "That key wasn't accepted." });
+    expect(await db.select().from(providerKeys)).toHaveLength(0);
+  });
+
+  it("asks to try again, without storing the key, when Deepgram can't be reached or fails", async () => {
+    await signIn();
+    deepgramFetch.mockRejectedValueOnce(new TypeError("fetch failed"));
+    expect(await save({ provider: "deepgram", key: "dg-secret-abcd" })).toEqual({
+      error: "Couldn't check the key, try again.",
+    });
+
+    deepgramFetch.mockResolvedValueOnce(new Response("{}", { status: 500 }));
+    expect(await save({ provider: "deepgram", key: "dg-secret-abcd" })).toEqual({
+      error: "Couldn't check the key, try again.",
+    });
+    expect(await db.select().from(providerKeys)).toHaveLength(0);
+  });
+
+  it("asks to try again, without storing the key, when Anthropic can't be reached", async () => {
+    await signIn();
+    listModels.mockRejectedValue(new APIConnectionError({ message: "Connection error." }));
+
+    expect(await save({ provider: "anthropic", key: "sk-ant" })).toEqual({ error: "Couldn't check the key, try again." });
+    expect(await db.select().from(providerKeys)).toHaveLength(0);
+  });
+
+  it("replaces an earlier key for the same provider", async () => {
+    const user = await signIn();
+    await save({ provider: "deepgram", key: "dg-old-1111" });
+    await save({ provider: "deepgram", key: "dg-new-2222" });
+
+    const rows = await db.select().from(providerKeys);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].keyHint).toBe("2222");
+    expect(await getProviderKeys(user.id)).toEqual({ deepgram: "dg-new-2222" });
+  });
+
+  it.each([
+    ["isn't set", ""],
+    ["is the wrong length", randomBytes(16).toString("base64")],
+  ])("fails clearly, without calling the provider, when ENCRYPTION_KEY %s", async (_case, value) => {
+    await signIn();
+    vi.stubEnv("ENCRYPTION_KEY", value);
+
+    expect(await save({ provider: "deepgram", key: "dg-secret-abcd" })).toEqual({
+      error: "Keys can't be saved because this server has no valid ENCRYPTION_KEY set.",
+    });
+    expect(deepgramFetch).not.toHaveBeenCalled();
+    expect(await db.select().from(providerKeys)).toHaveLength(0);
+  });
+
+  it("rejects an empty key or an unknown provider", async () => {
+    await signIn();
+    expect(await save({ provider: "deepgram", key: "   " })).toEqual({ error: "Paste a key to save." });
+    expect(await save({ provider: "openai", key: "sk-x" })).toEqual({ error: "Unknown provider." });
+    expect(deepgramFetch).not.toHaveBeenCalled();
+  });
+
+  it("requires sign-in", async () => {
+    expect(await redirectedTo(() => save({ provider: "deepgram", key: "dg" }))).toBe("/login");
+  });
+});
+
+describe("removeProviderKey", () => {
+  beforeEach(() => {
+    vi.stubEnv("ENCRYPTION_KEY", randomBytes(32).toString("base64"));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 200 })));
+    listModels.mockReset().mockResolvedValue({ data: [] });
+  });
+
+  it("removes only the signed-in speaker's key for that provider", async () => {
+    await signIn();
+    await saveProviderKey(undefined, form({ provider: "deepgram", key: "dg-other-1111" }));
+    await signIn();
+    await saveProviderKey(undefined, form({ provider: "deepgram", key: "dg-mine-2222" }));
+    await saveProviderKey(undefined, form({ provider: "anthropic", key: "sk-mine-3333" }));
+
+    await removeProviderKey(form({ provider: "deepgram" }));
+
+    const rows = await db.select().from(providerKeys);
+    expect(rows.map((r) => `${r.provider}:${r.keyHint}`).sort()).toEqual(["anthropic:3333", "deepgram:1111"]);
+  });
+
+  it("requires sign-in", async () => {
+    expect(await redirectedTo(() => removeProviderKey(form({ provider: "deepgram" })))).toBe("/login");
   });
 });

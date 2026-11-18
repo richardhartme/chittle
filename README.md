@@ -8,6 +8,7 @@ Built with Next.js (App Router), TypeScript, Postgres (Drizzle ORM), and the Cla
 
 ```bash
 cp .env.example .env        # then adjust if needed
+# set ENCRYPTION_KEY in .env to the output of: openssl rand -base64 32
 docker compose up -d        # Postgres on localhost:5433
 npm install
 npm run db:setup            # apply migrations and seed categories/topics
@@ -17,6 +18,8 @@ npm run dev                 # http://localhost:3000
 Sign-in is by magic link. Without `RESEND_API_KEY`, links are printed in the dev server console, so request one on `/login` and open the URL it logs.
 
 Without `ANTHROPIC_API_KEY`, only the predefined topics are served. Once a user has seen them all in a category, they'll be told no new topics are available. With a key set, new topics are generated and stored for everyone.
+
+Assessment runs on each speaker's own Deepgram and Anthropic keys, saved on the Account page. They're encrypted at rest under `ENCRYPTION_KEY`, so set it before saving any. Changing it later makes saved keys unreadable, and speakers would have to enter them again.
 
 Recording needs camera and microphone access, which browsers only grant on `localhost` or HTTPS.
 
@@ -39,6 +42,7 @@ Recording needs camera and microphone access, which browsers only grant on `loca
 - `src/db` — Drizzle schema, client, seed data
 - `src/lib/auth` — magic links, sessions, email sending
 - `src/lib/topics` — topic selection (no repeats per user) and Claude generation
+- `src/lib/provider-keys` — speakers' Deepgram and Anthropic keys: checked when saved, encrypted at rest (`src/lib/crypto.ts`)
 - `src/lib/storage` — `Storage` interface and the local-disk implementation (recordings in `STORAGE_DIR`)
 
 ## Testing
@@ -49,7 +53,7 @@ Recording needs camera and microphone access, which browsers only grant on `loca
 - `src/test/next.ts` — in-memory `next/headers` cookies and a throwing `redirect`, mirroring Next.
 - `src/test/storage.ts` — points `getStorage()` at a temp directory per test.
 - Tests sit next to the code (`*.test.ts`). Component tests (`*.test.tsx`) opt in to jsdom with a `// @vitest-environment jsdom` docblock.
-- External services (Resend, Anthropic) are always mocked.
+- External services (Resend, Anthropic, Deepgram) are always mocked.
 - Async server-component pages (`page.tsx`, `layout.tsx`) aren't unit tested, since Vitest can't render them; their logic lives in `src/lib` and `actions.ts`, which are covered. End-to-end tests would be the way to cover the pages themselves.
 
 ## Notes
