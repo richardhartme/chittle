@@ -4,13 +4,12 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/db";
-import { recordingRatings, recordings, users } from "@/db/schema";
+import { recordings, users } from "@/db/schema";
 import { consumeMagicLink, normaliseEmail, requestMagicLink } from "@/lib/auth/magic-link";
 import { createSession, destroySession, requireUser } from "@/lib/auth/session";
-import { recordingMode } from "@/lib/practice";
 import { getStorage } from "@/lib/storage";
 
-export type FormState = { error?: string; sent?: boolean; saved?: boolean } | undefined;
+export type FormState = { error?: string; sent?: boolean } | undefined;
 
 export async function requestLoginLink(_prev: FormState, formData: FormData): Promise<FormState> {
   const email = z.email().safeParse(normaliseEmail(String(formData.get("email") ?? "")));
@@ -38,44 +37,6 @@ export async function logout() {
   redirect("/");
 }
 
-const ratingValue = z.coerce.number().int().min(1).max(5);
-const ratingSchema = z.object({
-  recordingId: z.uuid(),
-  clarity: ratingValue,
-  confidence: ratingValue,
-  structure: ratingValue,
-  pacing: ratingValue,
-  // Required for video recordings only; checked once the recording's mode is known.
-  bodyLanguage: ratingValue.optional(),
-  note: z.string().max(5000),
-});
-
-export async function saveRating(_prev: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireUser();
-
-  const invalid = { error: "Please rate every criterion from 1 to 5." };
-  const parsed = ratingSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return invalid;
-  const { recordingId, bodyLanguage, ...rest } = parsed.data;
-
-  const [owned] = await db
-    .select({ mimeType: recordings.mimeType })
-    .from(recordings)
-    .where(and(eq(recordings.id, recordingId), eq(recordings.userId, user.id)));
-  if (!owned) return { error: "Recording not found." };
-
-  // Audio-only recordings have no body language to rate.
-  const isAudio = recordingMode(owned.mimeType) === "audio";
-  if (!isAudio && bodyLanguage === undefined) return invalid;
-  const values = { ...rest, bodyLanguage: isAudio ? null : bodyLanguage };
-
-  await db
-    .insert(recordingRatings)
-    .values({ recordingId, ...values })
-    .onConflictDoUpdate({ target: recordingRatings.recordingId, set: { ...values, updatedAt: new Date() } });
-  return { saved: true };
-}
-
 export async function deleteRecording(formData: FormData) {
   const user = await requireUser();
   const id = z.uuid().safeParse(formData.get("recordingId"));
@@ -99,7 +60,7 @@ export async function deleteAccount(formData: FormData) {
   if (formData.get("confirm") !== user.email) redirect("/account?error=confirm");
 
   await getStorage().deletePrefix(user.id);
-  await db.delete(users).where(eq(users.id, user.id)); // cascades to sessions, recordings, ratings, seen topics
+  await db.delete(users).where(eq(users.id, user.id)); // cascades to sessions, recordings, seen topics
   await destroySession();
   redirect("/");
 }

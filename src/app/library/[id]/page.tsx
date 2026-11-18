@@ -4,12 +4,11 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
 import { db } from "@/db";
-import { recordingRatings, recordings, topics } from "@/db/schema";
+import { recordings, topics } from "@/db/schema";
 import { requireUser } from "@/lib/auth/session";
 import { formatDate, formatDuration } from "@/lib/format";
 import { recordingMode } from "@/lib/practice";
 import { DeleteForm } from "./delete-form";
-import { RatingForm } from "./rating-form";
 
 export default function RecordingPage({ params }: PageProps<"/library/[id]">) {
   return (
@@ -25,14 +24,13 @@ async function Recording({ params }: Pick<PageProps<"/library/[id]">, "params">)
   if (!z.uuid().safeParse(id).success) notFound();
 
   const [row] = await db
-    .select({ recording: recordings, topic: topics.text, rating: recordingRatings })
+    .select({ recording: recordings, topic: topics.text })
     .from(recordings)
     .innerJoin(topics, eq(topics.id, recordings.topicId))
-    .leftJoin(recordingRatings, eq(recordingRatings.recordingId, recordings.id))
     .where(and(eq(recordings.id, id), eq(recordings.userId, user.id)));
   if (!row) notFound();
 
-  const { recording, topic, rating } = row;
+  const { recording, topic } = row;
   const mode = recordingMode(recording.mimeType);
   const src = `/api/recordings/${recording.id}/file`;
 
@@ -51,11 +49,6 @@ async function Recording({ params }: Pick<PageProps<"/library/[id]">, "params">)
       ) : (
         <video controls preload="metadata" src={src} />
       )}
-
-      <div className="card stack">
-        <h2>How did it go?</h2>
-        <RatingForm recordingId={recording.id} mode={mode} initial={rating} />
-      </div>
 
       <DeleteForm recordingId={recording.id} />
     </div>

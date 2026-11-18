@@ -1,12 +1,9 @@
-import { sql } from "drizzle-orm";
 import {
-  check,
   index,
   integer,
   pgEnum,
   pgTable,
   primaryKey,
-  smallint,
   text,
   timestamp,
   unique,
@@ -99,34 +96,7 @@ export const recordings = pgTable(
   (t) => [index("recordings_user_created_idx").on(t.userId, t.createdAt)],
 );
 
-const rating = (name: string) => smallint(name).notNull();
-
-export const recordingRatings = pgTable(
-  "recording_ratings",
-  {
-    recordingId: uuid("recording_id")
-      .primaryKey()
-      .references(() => recordings.id, { onDelete: "cascade" }),
-    clarity: rating("clarity"),
-    confidence: rating("confidence"),
-    structure: rating("structure"),
-    pacing: rating("pacing"),
-    // Null for audio-only recordings, which have no body language to rate. The range check below
-    // still applies to video ratings: a null makes its clause null, which a CHECK accepts.
-    bodyLanguage: smallint("body_language"),
-    note: text("note").notNull().default(""),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => [
-    check(
-      "recording_ratings_range",
-      sql`${t.clarity} between 1 and 5 and ${t.confidence} between 1 and 5 and ${t.structure} between 1 and 5 and ${t.pacing} between 1 and 5 and ${t.bodyLanguage} between 1 and 5`,
-    ),
-  ],
-);
-
 export type User = typeof users.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type Topic = typeof topics.$inferSelect;
 export type Recording = typeof recordings.$inferSelect;
-export type RecordingRating = typeof recordingRatings.$inferSelect;
