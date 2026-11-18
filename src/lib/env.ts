@@ -28,6 +28,10 @@ export const env = {
   get topicModel() {
     return process.env.TOPIC_MODEL || "claude-haiku-4-5-20251001";
   },
+  /** Base64 of 32 random bytes, used to encrypt provider keys at rest. Only needed to save keys. */
+  get encryptionKey() {
+    return process.env.ENCRYPTION_KEY || undefined;
+  },
   get isProduction() {
     return process.env.NODE_ENV === "production";
   },

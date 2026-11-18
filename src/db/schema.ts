@@ -96,7 +96,25 @@ export const recordings = pgTable(
   (t) => [index("recordings_user_created_idx").on(t.userId, t.createdAt)],
 );
 
+export const provider = pgEnum("provider", ["deepgram", "anthropic"]);
+
+export const providerKeys = pgTable(
+  "provider_keys",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    provider: provider("provider").notNull(),
+    // AES-256-GCM ciphertext (see src/lib/crypto.ts), never the plain key.
+    encryptedKey: text("encrypted_key").notNull(),
+    keyHint: text("key_hint").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.provider] })],
+);
+
 export type User = typeof users.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type Topic = typeof topics.$inferSelect;
 export type Recording = typeof recordings.$inferSelect;
+export type Provider = (typeof provider.enumValues)[number];

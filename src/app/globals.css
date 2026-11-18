@@ -195,6 +195,16 @@ p {
   align-items: center;
 }
 
+.provider-key {
+  padding-top: 1rem;
+  border-top: 1.5px solid var(--border);
+}
+
+.provider-key h3 {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
 /* Forms */
 
 label {
