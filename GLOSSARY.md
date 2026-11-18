@@ -116,6 +116,9 @@ A stretch of speech noticeably faster than the speaker's baseline.
 **Drag zone**:
 A stretch of speech noticeably slower than the speaker's baseline.
 
+**Hesitation zone**:
+A long pause in the middle of a sentence, as opposed to a pause between sentences.
+
 ## Accounts
 
 **Speaker**:

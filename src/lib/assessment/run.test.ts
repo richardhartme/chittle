@@ -77,6 +77,37 @@ describe("runAssessment", () => {
     expect(row.completedAt).toBeInstanceOf(Date);
   });
 
+  it("measures the transcript and stores the measured scores and metrics, leaving the total for judging", async () => {
+    deepgramReplies(success());
+
+    await runAssessment(recordingId, claim, keys);
+
+    const row = await assessment();
+    expect(row).toMatchObject({
+      status: "done",
+      scoringVersion: 1,
+      fillerRateScore: 0, // 1 filler in 2 words
+      pronunciationScore: 150, // "hello" heard clearly
+      totalScore: null,
+      structureScore: null,
+      concisenessScore: null,
+      confidenceScore: null,
+    });
+    const { measured } = row.result as { measured: { fillers: unknown; subScores: Record<string, number> } };
+    expect(measured.fillers).toMatchObject({ total: 1, breakdown: [{ word: "um", count: 1 }] });
+    expect(row.paceScore).toBe(measured.subScores.pauseTiming + measured.subScores.wordsPerMinute);
+  });
+
+  it("measures an already-stored transcript", async () => {
+    const words = [{ word: "hello", punctuated_word: "Hello.", start: 0, end: 0.5, confidence: 0.5 }];
+    await db.insert(transcripts).values({ recordingId, text: "Hello.", words, audioSeconds: 1 });
+    deepgramReplies(success());
+
+    await runAssessment(recordingId, claim, keys);
+
+    expect(await assessment()).toMatchObject({ status: "done", scoringVersion: 1, pronunciationScore: 0 });
+  });
+
   it("falls back to the plain word when Deepgram leaves out the punctuated one", async () => {
     deepgramReplies(success("hello", [{ word: "hello", start: 0, end: 0.5, confidence: 0.9 }] as never));
 
