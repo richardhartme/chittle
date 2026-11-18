@@ -2,7 +2,7 @@ import { stat } from "node:fs/promises";
 import path from "node:path";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { magicLinks, recordingRatings, recordings, sessions, userSeenTopics, users } from "@/db/schema";
+import { magicLinks, recordings, sessions, userSeenTopics, users } from "@/db/schema";
 import { hashToken } from "@/lib/auth/tokens";
 import { signIn } from "@/test/auth";
 import { createCategory, createRecording, createTopic, createUser, db, resetDb } from "@/test/db";
@@ -20,7 +20,6 @@ import {
   deleteRecording,
   logout,
   requestLoginLink,
-  saveRating,
   verifyLoginLink,
 } from "./actions";
 
@@ -121,160 +120,6 @@ describe("logout", () => {
   });
 });
 
-describe("saveRating", () => {
-  const ratings = { clarity: "4", confidence: "3", structure: "5", pacing: "2", bodyLanguage: "1" };
-  let topicId: string;
-
-  beforeEach(async () => {
-    topicId = (await createTopic((await createCategory("a")).id, "A topic")).id;
-  });
-
-  it("requires sign-in", async () => {
-    expect(await redirectedTo(() => saveRating(undefined, form({})))).toBe("/login");
-  });
-
-  it("saves a rating for the user's own recording", async () => {
-    const user = await signIn();
-    const recording = await createRecording(user.id, topicId);
-
-    const result = await saveRating(undefined, form({ recordingId: recording.id, ...ratings, note: "Good pace" }));
-
-    expect(result).toEqual({ saved: true });
-    const [row] = await db.select().from(recordingRatings);
-    expect(row).toMatchObject({
-      recordingId: recording.id,
-      clarity: 4,
-      confidence: 3,
-      structure: 5,
-      pacing: 2,
-      bodyLanguage: 1,
-      note: "Good pace",
-    });
-  });
-
-  it("updates an existing rating instead of adding another", async () => {
-    const user = await signIn();
-    const recording = await createRecording(user.id, topicId);
-    await saveRating(undefined, form({ recordingId: recording.id, ...ratings, note: "first" }));
-    const [first] = await db.select().from(recordingRatings);
-
-    await saveRating(undefined, form({ recordingId: recording.id, ...ratings, clarity: "5", note: "second" }));
-
-    const rows = await db.select().from(recordingRatings);
-    expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ clarity: 5, note: "second" });
-    expect(rows[0].updatedAt.getTime()).toBeGreaterThanOrEqual(first.updatedAt.getTime());
-  });
-
-  it("accepts an empty note", async () => {
-    const user = await signIn();
-    const recording = await createRecording(user.id, topicId);
-
-    expect(await saveRating(undefined, form({ recordingId: recording.id, ...ratings, note: "" }))).toEqual({
-      saved: true,
-    });
-  });
-
-  it("refuses to rate someone else's recording", async () => {
-    const other = await createUser();
-    const recording = await createRecording(other.id, topicId);
-    await signIn();
-
-    const result = await saveRating(undefined, form({ recordingId: recording.id, ...ratings, note: "" }));
-
-    expect(result).toEqual({ error: "Recording not found." });
-    expect(await db.select().from(recordingRatings)).toHaveLength(0);
-  });
-
-  it("refuses an unknown recording", async () => {
-    await signIn();
-    const result = await saveRating(
-      undefined,
-      form({ recordingId: "00000000-0000-4000-8000-000000000000", ...ratings, note: "" }),
-    );
-    expect(result).toEqual({ error: "Recording not found." });
-  });
-
-  it.each([
-    ["a rating of 0", { clarity: "0" }],
-    ["a rating of 6", { pacing: "6" }],
-    ["a fractional rating", { structure: "2.5" }],
-    ["a non-numeric rating", { confidence: "great" }],
-    ["a blank rating", { bodyLanguage: "" }],
-    ["an over-long note", { note: "x".repeat(5001) }],
-    ["a non-uuid recording id", { recordingId: "123" }],
-  ])("rejects %s", async (_name, override) => {
-    const user = await signIn();
-    const recording = await createRecording(user.id, topicId);
-
-    const result = await saveRating(
-      undefined,
-      form({ recordingId: recording.id, ...ratings, note: "", ...override }),
-    );
-
-    expect(result).toEqual({ error: "Please rate every criterion from 1 to 5." });
-    expect(await db.select().from(recordingRatings)).toHaveLength(0);
-  });
-
-  it("rejects a missing criterion", async () => {
-    const user = await signIn();
-    const recording = await createRecording(user.id, topicId);
-    const incomplete = Object.fromEntries(Object.entries(ratings).filter(([name]) => name !== "pacing"));
-
-    const result = await saveRating(undefined, form({ recordingId: recording.id, ...incomplete, note: "" }));
-
-    expect(result?.error).toBeDefined();
-  });
-
-  const without = (fields: Record<string, string>, name: string) =>
-    Object.fromEntries(Object.entries(fields).filter(([key]) => key !== name));
-  const withoutBodyLanguage = without(ratings, "bodyLanguage");
-
-  describe("for an audio-only recording", () => {
-
-    it("saves without a body language rating", async () => {
-      const user = await signIn();
-      const recording = await createRecording(user.id, topicId, { mimeType: "audio/webm" });
-
-      const result = await saveRating(undefined, form({ recordingId: recording.id, ...withoutBodyLanguage, note: "" }));
-
-      expect(result).toEqual({ saved: true });
-      const [row] = await db.select().from(recordingRatings);
-      expect(row).toMatchObject({ clarity: 4, confidence: 3, structure: 5, pacing: 2, bodyLanguage: null });
-    });
-
-    it("ignores a body language rating if one is sent anyway", async () => {
-      const user = await signIn();
-      const recording = await createRecording(user.id, topicId, { mimeType: "audio/mp4" });
-
-      await saveRating(undefined, form({ recordingId: recording.id, ...ratings, note: "" }));
-
-      expect((await db.select().from(recordingRatings))[0].bodyLanguage).toBeNull();
-    });
-
-    it("still requires the other criteria", async () => {
-      const user = await signIn();
-      const recording = await createRecording(user.id, topicId, { mimeType: "audio/webm" });
-      const incomplete = without(withoutBodyLanguage, "clarity");
-
-      const result = await saveRating(undefined, form({ recordingId: recording.id, ...incomplete, note: "" }));
-
-      expect(result).toEqual({ error: "Please rate every criterion from 1 to 5." });
-      expect(await db.select().from(recordingRatings)).toHaveLength(0);
-    });
-  });
-
-  it("still requires body language for a video recording", async () => {
-    const user = await signIn();
-    const recording = await createRecording(user.id, topicId, { mimeType: "video/webm" });
-
-    const result = await saveRating(undefined, form({ recordingId: recording.id, ...withoutBodyLanguage, note: "" }));
-
-    expect(result).toEqual({ error: "Please rate every criterion from 1 to 5." });
-    expect(await db.select().from(recordingRatings)).toHaveLength(0);
-  });
-});
-
 describe("deleteRecording", () => {
   let topicId: string;
 
@@ -292,23 +137,14 @@ describe("deleteRecording", () => {
     expect(await redirectedTo(() => deleteRecording(form({})))).toBe("/login");
   });
 
-  it("deletes the row, its rating and the stored file, then redirects to the library", async () => {
+  it("deletes the row and the stored file, then redirects to the library", async () => {
     const user = await signIn();
     const recording = await createRecording(user.id, topicId);
     await temp.storage().put(recording.storageKey, streamOf("video"));
-    await db.insert(recordingRatings).values({
-      recordingId: recording.id,
-      clarity: 3,
-      confidence: 3,
-      structure: 3,
-      pacing: 3,
-      bodyLanguage: 3,
-    });
 
     expect(await redirectedTo(() => deleteRecording(form({ recordingId: recording.id })))).toBe("/library");
 
     expect(await db.select().from(recordings)).toHaveLength(0);
-    expect(await db.select().from(recordingRatings)).toHaveLength(0);
     expect(await exists(recording.storageKey)).toBe(false);
   });
 

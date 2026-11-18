@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 const STEPS = [
   { title: "Get a topic", body: "Pick a category and we'll give you something to talk about. Not feeling it? Roll again." },
   { title: "Record yourself", body: "Prepare for as long as you like, then speak on camera or with audio only." },
-  { title: "Watch and rate", body: "Play it back, score your clarity, confidence and more, and see how you improve." },
+  { title: "Get feedback", body: "Play it back, get feedback on how it went, and see how you improve." },
 ];
 
 export default async function Home() {
@@ -18,8 +18,8 @@ export default async function Home() {
           Get better at speaking, <mark>one topic</mark> at a time.
         </h1>
         <p className="muted">
-          Pick a category, get a random topic, and record yourself talking about it on video. Watch it back, rate
-          yourself, and see how you improve.
+          Pick a category, get a random topic, and record yourself talking about it on video. Watch it back, get
+          feedback, and see how you improve.
         </p>
         <Link href="/login" className="button primary">
           Sign in with email

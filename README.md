@@ -1,6 +1,6 @@
 # Chittle
 
-Practise speaking: pick a topic category, get a random topic, record yourself on video, and rate how it went. See [SPEC.md](SPEC.md) for the product and technical spec.
+Practise speaking: pick a topic category, get a random topic, record yourself on video or audio only, and get feedback on each recording. See [SPEC.md](SPEC.md) for the product and technical spec.
 
 Built with Next.js (App Router), TypeScript, Postgres (Drizzle ORM), and the Claude API for topic generation.
 

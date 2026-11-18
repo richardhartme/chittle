@@ -5,7 +5,7 @@ import { deleteRecording } from "@/app/actions";
 
 export function DeleteForm({ recordingId }: { recordingId: string }) {
   function onSubmit(event: FormEvent<HTMLFormElement>) {
-    if (!window.confirm("Delete this recording? This permanently removes the video and your ratings.")) {
+    if (!window.confirm("Delete this recording? This permanently removes it and can't be undone.")) {
       event.preventDefault();
     }
   }
