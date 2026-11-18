@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/db";
 import { provider, recordings, users } from "@/db/schema";
+import { startAssessment } from "@/lib/assessment";
 import { consumeMagicLink, normaliseEmail, requestMagicLink } from "@/lib/auth/magic-link";
 import { createSession, destroySession, requireUser } from "@/lib/auth/session";
 import * as providerKeyStore from "@/lib/provider-keys";
@@ -63,6 +64,23 @@ export async function removeProviderKey(formData: FormData) {
 
   // Scoped to the signed-in user, so nobody can remove another speaker's key.
   await providerKeyStore.removeProviderKey(user.id, which.data);
+  refresh();
+}
+
+/** Assess (an unassessed recording) and Retry (a failed or stalled one) both start an assessment. */
+export async function assessRecording(formData: FormData) {
+  const user = await requireUser();
+  const id = z.uuid().safeParse(formData.get("recordingId"));
+  if (!id.success) return;
+
+  // Scoped to the signed-in user, so nobody can spend another speaker's keys.
+  const [recording] = await db
+    .select({ id: recordings.id, userId: recordings.userId })
+    .from(recordings)
+    .where(and(eq(recordings.id, id.data), eq(recordings.userId, user.id)));
+  if (!recording) return;
+
+  await startAssessment(recording);
   refresh();
 }
 

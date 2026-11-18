@@ -1,15 +1,17 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { recordings } from "@/db/schema";
+import { assessments, recordings, transcripts } from "@/db/schema";
 import { signIn } from "@/test/auth";
 import { createCategory, createTopic, db, resetDb } from "@/test/db";
-import { resetNextMocks } from "@/test/next";
+import { saveTestKeys } from "@/test/keys";
+import { afterSettled, resetNextMocks } from "@/test/next";
 import { withTempStorage } from "@/test/storage";
 
 vi.mock("@/db", async () => ({ db: (await import("@/test/db")).db }));
 vi.mock("next/headers", async () => (await import("@/test/next")).headersMock);
 vi.mock("next/navigation", async () => (await import("@/test/next")).navigationMock);
+vi.mock("next/server", async () => (await import("@/test/next")).serverMock);
 
 import { POST } from "./route";
 
@@ -24,6 +26,22 @@ beforeEach(async () => {
 });
 
 afterEach(() => vi.restoreAllMocks());
+
+const deepgramSuccess = {
+  metadata: { duration: 2 },
+  results: {
+    channels: [
+      {
+        alternatives: [
+          {
+            transcript: "Hello there.",
+            words: [{ word: "hello", punctuated_word: "Hello", start: 0, end: 0.5, confidence: 0.99 }],
+          },
+        ],
+      },
+    ],
+  },
+};
 
 function upload(
   body: BodyInit | null = "video-bytes",
@@ -171,6 +189,49 @@ describe("POST /api/recordings", () => {
       const b = (await (await upload("two")).json()).id;
       expect(a).not.toBe(b);
       expect(await filesStored()).toHaveLength(2);
+    });
+
+    describe("assessment", () => {
+      it("starts an assessment and transcribes the recording when the speaker has both keys", async () => {
+        const user = await signIn();
+        await saveTestKeys(user.id);
+        const fetch = vi.fn().mockResolvedValue(Response.json(deepgramSuccess));
+        vi.stubGlobal("fetch", fetch);
+
+        const res = await upload("video-bytes");
+        expect(res.status).toBe(201);
+        await afterSettled();
+
+        const { id } = await res.json();
+        expect(fetch).toHaveBeenCalledTimes(1);
+        expect(await db.select().from(assessments)).toMatchObject([{ recordingId: id, status: "done" }]);
+        expect(await db.select().from(transcripts)).toMatchObject([{ recordingId: id, text: "Hello there." }]);
+      });
+
+      it("saves the recording without an assessment when the speaker has no keys", async () => {
+        await signIn();
+        const fetch = vi.fn();
+        vi.stubGlobal("fetch", fetch);
+
+        const res = await upload("video-bytes");
+        await afterSettled();
+
+        expect(res.status).toBe(201);
+        expect(await db.select().from(recordings)).toHaveLength(1);
+        expect(await db.select().from(assessments)).toHaveLength(0);
+        expect(fetch).not.toHaveBeenCalled();
+      });
+
+      it("saves the recording without an assessment when only one key is saved", async () => {
+        const user = await signIn();
+        await saveTestKeys(user.id, { deepgram: "dg-only" });
+
+        const res = await upload("video-bytes");
+        await afterSettled();
+
+        expect(res.status).toBe(201);
+        expect(await db.select().from(assessments)).toHaveLength(0);
+      });
     });
   });
 });
