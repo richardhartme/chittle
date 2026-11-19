@@ -1,3 +1,5 @@
+/* Each colour role is light-dark(light, dark). The theme follows the system unless the theme button
+   has set data-theme on <html>, which pins color-scheme and so which value light-dark() picks. */
 :root {
   /* Palette */
   --indigo: #2b0b7d;
@@ -8,88 +10,58 @@
   --lilac: #ac9ec7;
 
   /* Tints derived from the palette */
-  --lavender-soft: #ede8ff;
-  --amber-soft: #fdebc6;
-  --tan-soft: #f1eadc;
+  --lavender-soft: light-dark(#ede8ff, #2e2550);
+  --amber-soft: light-dark(#fdebc6, #3a2e17);
+  --tan-soft: light-dark(#f1eadc, #332b22);
 
   /* Roles */
-  --bg: #fffaf1;
-  --surface: #ffffff;
-  --text: var(--plum);
-  --heading: var(--indigo);
+  --bg: light-dark(#fffaf1, #140f24);
+  --surface: light-dark(#ffffff, #1e1734);
+  --text: light-dark(var(--plum), #e9e3f5);
+  --heading: light-dark(var(--indigo), #d8ccff);
   /* Brand-coloured text and borders on the page's own surfaces. */
-  --ink: var(--indigo);
-  --muted: #75657f;
-  --border: #e5ddf0;
-  --track: #efe9f7;
-  --accent: var(--indigo);
-  --accent-hover: #3d1ba3;
-  --accent-text: #ffffff;
-  --positive: #1d7a4f;
-  --danger: #c93b45;
-  --danger-soft: #fdecee;
-  --backdrop: rgb(43 11 125 / 0.35);
+  --ink: light-dark(var(--indigo), #c4b3ff);
+  --muted: light-dark(#75657f, #a99cbd);
+  --border: light-dark(#e5ddf0, #3a3058);
+  --track: light-dark(#efe9f7, #2c2447);
+  --accent: light-dark(var(--indigo), var(--lavender));
+  --accent-hover: light-dark(#3d1ba3, #b39dff);
+  --accent-text: light-dark(#ffffff, var(--indigo));
+  --positive: light-dark(#1d7a4f, #4ccb92);
+  --danger: light-dark(#c93b45, #ff7a84);
+  --danger-soft: light-dark(#fdecee, #3d1c26);
+  --backdrop: light-dark(rgb(43 11 125 / 0.35), rgb(5 2 15 / 0.6));
 
   /* Dimension colours */
-  --dimension-structure: #2f6ad9;
-  --dimension-conciseness: #1e9361;
-  --dimension-confidence: #e2671b;
-  --dimension-pronunciation: #8a4fe0;
-  --dimension-filler: #d63a48;
-  --dimension-pace: #d89b00;
+  --dimension-structure: light-dark(#2f6ad9, #6f9dff);
+  --dimension-conciseness: light-dark(#1e9361, #4ccb92);
+  --dimension-confidence: light-dark(#e2671b, #ff9a56);
+  --dimension-pronunciation: light-dark(#8a4fe0, #b78dff);
+  --dimension-filler: light-dark(#d63a48, #ff6b78);
+  --dimension-pace: light-dark(#d89b00, #ffc93d);
 
   /* Pace charts: the banded scales (grey, amber, then green for the ideal) and the series, validated
      for colour-blind separation against the surface. */
-  --scale-outer: #d8d0e2;
-  --scale-near: #f0b23e;
-  --scale-ideal: #2e9e68;
-  --pace-speech: #6a4fd6;
-  --pace-rush: #d63a48;
-  --pace-drag: #1f8fb0;
+  --scale-outer: light-dark(#d8d0e2, #4b4166);
+  --scale-near: light-dark(#f0b23e, #c98f22);
+  --scale-ideal: light-dark(#2e9e68, #2f9e69);
+  --pace-speech: light-dark(#6a4fd6, #8b70ea);
+  --pace-rush: light-dark(#d63a48, #e8505e);
+  --pace-drag: light-dark(#1f8fb0, #22a9a0);
   --radius: 20px;
   --radius-sm: 12px;
-  --shadow: 0 1px 2px rgb(43 11 125 / 0.05), 0 8px 24px -12px rgb(43 11 125 / 0.14);
+  --shadow: 0 1px 2px light-dark(rgb(43 11 125 / 0.05), rgb(0 0 0 / 0.3)),
+    0 8px 24px -12px light-dark(rgb(43 11 125 / 0.14), rgb(0 0 0 / 0.5));
 
   color-scheme: light dark;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --lavender-soft: #2e2550;
-    --amber-soft: #3a2e17;
-    --tan-soft: #332b22;
+:root[data-theme="light"] {
+  color-scheme: light;
+}
 
-    --bg: #140f24;
-    --surface: #1e1734;
-    --text: #e9e3f5;
-    --heading: #d8ccff;
-    --ink: #c4b3ff;
-    --muted: #a99cbd;
-    --border: #3a3058;
-    --track: #2c2447;
-    --accent: var(--lavender);
-    --accent-hover: #b39dff;
-    --accent-text: var(--indigo);
-    --positive: #4ccb92;
-    --danger: #ff7a84;
-    --danger-soft: #3d1c26;
-    --backdrop: rgb(5 2 15 / 0.6);
-
-    --dimension-structure: #6f9dff;
-    --dimension-conciseness: #4ccb92;
-    --dimension-confidence: #ff9a56;
-    --dimension-pronunciation: #b78dff;
-    --dimension-filler: #ff6b78;
-    --dimension-pace: #ffc93d;
-
-    --scale-outer: #4b4166;
-    --scale-near: #c98f22;
-    --scale-ideal: #2f9e69;
-    --pace-speech: #8b70ea;
-    --pace-rush: #e8505e;
-    --pace-drag: #22a9a0;
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.5);
-  }
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 * {
@@ -167,6 +139,31 @@ p {
   gap: 0.25rem;
   align-items: center;
   flex-wrap: wrap;
+}
+
+.site-header-end {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* The theme button shows the state matching <html>'s data-theme: none means system. */
+.theme-toggle {
+  display: grid;
+  place-items: center;
+  padding: 0.4rem;
+  border-color: transparent;
+  background: none;
+}
+
+.theme-toggle > span {
+  display: none;
+}
+
+:root:not([data-theme]) .theme-toggle .theme-system,
+:root[data-theme="light"] .theme-toggle .theme-light,
+:root[data-theme="dark"] .theme-toggle .theme-dark {
+  display: grid;
 }
 
 .site-header nav a {

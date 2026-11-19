@@ -116,6 +116,10 @@ Structure is judged against the category's framework. Uptalk isn't scored (it ne
 - Provider keys (see above).
 - Deleting an account removes all of the user's data, keys and recording files.
 
+### Theme
+- A button at the right of the header, on every page and signed out too, cycles the colour theme: System (follows the device), Light, Dark. Its icon shows the current one.
+- The choice is kept in the browser (`localStorage`), not the account, and an inline script applies it before the page paints, so there's no flash of the other theme.
+
 ## Out of scope (planned later)
 - Uptalk detection (pitch analysis of the audio).
 - Body language or any analysis of the video picture.

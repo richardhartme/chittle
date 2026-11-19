@@ -3,6 +3,8 @@ import { Bricolage_Grotesque, Figtree } from "next/font/google";
 import Link from "next/link";
 import { Suspense } from "react";
 import { SiteNav } from "@/components/site-nav";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { THEME_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 const display = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-display" });
@@ -17,7 +19,11 @@ export const metadata: Metadata = {
 // frame) is static and the page content streams in behind the boundary.
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable}`}>
+    // The theme script sets data-theme on <html> before React hydrates, so React keeps it.
+    <html lang="en" className={`${display.variable} ${body.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body>
         <header className="site-header">
           <Link href="/" className="brand">
@@ -29,9 +35,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </svg>
             Chittle
           </Link>
-          <Suspense fallback={null}>
-            <SiteNav />
-          </Suspense>
+          <div className="site-header-end">
+            <Suspense fallback={null}>
+              <SiteNav />
+            </Suspense>
+            <ThemeToggle />
+          </div>
         </header>
         <main className="container">
           <Suspense fallback={<p className="muted">Loading…</p>}>{children}</Suspense>
