@@ -102,6 +102,9 @@ Structure is judged against the category's framework. Uptalk isn't scored (it ne
 ### Dashboard (signed-in home, `/`)
 - Average score and a stacked bar chart of recent scores by dimension, filterable by dimension (all, or one) and range (last 7, last 30 or all practices).
 - The **progress insight**: a coaching observation across the user's last ~10 assessments, which takes their focus votes into account. It's regenerated after each assessment and stored, so the dashboard never waits on Claude.
+  - It's shown in a "Coach's insight" card, with "Updated <relative time>", once the user has any recordings.
+  - With fewer than 2 assessments, the card says "Your coach's insights appear after a couple of practices."
+  - With 2 or more assessments but no stored insight yet (for example, when writing it failed), it says "Your coach's insight appears after your next practice."
 - A prominent link to practise.
 
 ### Authentication

@@ -3,11 +3,17 @@
 import Link from "next/link";
 import { useId } from "react";
 import { useWidth } from "@/components/use-width";
-import { DIMENSION_KEYS, DIMENSIONS, MAX_TOTAL, type DimensionKey } from "@/lib/assessment/dimensions";
-import type { DashboardFilters, ScoreColumn } from "@/lib/dashboard";
+import { DIMENSIONS } from "@/lib/assessment/dimensions";
+import type { DimensionView, ScoreColumn } from "@/lib/dashboard";
 
-/** A column as the chart draws it. The date is formatted on the server, so it matches after hydration. */
-export type ChartColumn = Omit<ScoreColumn, "createdAt"> & { date: string };
+/**
+ * A column as the chart draws it, with its score in the selected view. The date is formatted on the
+ * server, so it matches after hydration.
+ */
+export type ChartColumn = Omit<ScoreColumn, "createdAt"> & { date: string; value: number };
+
+/** The dimension view without its `value` function, which can't be passed to a client component. */
+export type ChartView = Omit<DimensionView, "value">;
 
 const PLOT = { height: 260, top: 12, bottom: 30, left: 40, right: 4 } as const;
 const BAR = { maxWidth: 24, gap: 2, radius: 4 } as const;
@@ -25,13 +31,11 @@ function roundedTop(x: number, y: number, width: number, height: number, radius:
  * dimension against a hatched background as tall as the maximum, with the total underneath. With
  * one dimension selected, just that dimension against its own maximum. Each column links to its results.
  */
-export function ScoreHistoryChart({ columns, dimension }: { columns: ChartColumn[]; dimension: DashboardFilters["dimension"] }) {
+export function ScoreHistoryChart({ columns, view: { keys, max, name } }: { columns: ChartColumn[]; view: ChartView }) {
   const id = useId();
   const [ref, width] = useWidth<HTMLDivElement>(640);
-  const keys: DimensionKey[] = dimension === "all" ? DIMENSION_KEYS : [dimension];
-  const max = dimension === "all" ? MAX_TOTAL : DIMENSIONS[dimension].max;
-  const value = (column: ChartColumn) => (dimension === "all" ? column.total : column.scores[dimension]);
-  const name = dimension === "all" ? "Score" : DIMENSIONS[dimension].name;
+  // A breakdown and a total only add anything when more than one dimension is stacked.
+  const showsTotal = keys.length > 1;
 
   const bottom = PLOT.height - PLOT.bottom;
   const y = (score: number) => bottom - (score / max) * (bottom - PLOT.top);
@@ -76,12 +80,12 @@ export function ScoreHistoryChart({ columns, dimension }: { columns: ChartColumn
                 key={column.recordingId}
                 href={`/library/${column.recordingId}`}
                 className="score-column"
-                aria-label={`${column.date}: ${name.toLowerCase()} ${value(column)} out of ${max}. Open results.`}
+                aria-label={`${column.date}: ${name.toLowerCase()} ${column.value} out of ${max}. Open results.`}
               >
                 <title>
                   {[
-                    `${column.date}: ${value(column)}/${max}`,
-                    ...(dimension === "all" ? keys.map((key) => `${DIMENSIONS[key].name} ${column.scores[key]}`) : []),
+                    `${column.date}: ${column.value}/${max}`,
+                    ...(showsTotal ? keys.map((key) => `${DIMENSIONS[key].name} ${column.scores[key]}`) : []),
                   ].join("\n")}
                 </title>
                 <rect className="hit" x={centre - band / 2} width={band} y={PLOT.top} height={PLOT.height - PLOT.top} />
@@ -103,7 +107,7 @@ export function ScoreHistoryChart({ columns, dimension }: { columns: ChartColumn
                 })}
                 {band >= MIN_LABEL_BAND && (
                   <text className="score-total" x={centre} y={bottom + 18} textAnchor="middle" aria-hidden="true">
-                    {value(column)}
+                    {column.value}
                   </text>
                 )}
               </Link>
@@ -111,15 +115,13 @@ export function ScoreHistoryChart({ columns, dimension }: { columns: ChartColumn
           })}
         </svg>
       </div>
-      {dimension === "all" && (
-        <ul className="chart-legend" aria-label="Dimensions">
-          {keys.map((key) => (
-            <li key={key}>
-              <span className={`key block dimension-key ${key}`} aria-hidden="true" /> {DIMENSIONS[key].name}
-            </li>
-          ))}
-        </ul>
-      )}
+      <ul className="chart-legend" aria-label="Dimensions">
+        {keys.map((key) => (
+          <li key={key}>
+            <span className={`key block dimension-key ${key}`} aria-hidden="true" /> {DIMENSIONS[key].name}
+          </li>
+        ))}
+      </ul>
       <details className="chart-table">
         <summary>Show as a table</summary>
         <div className="table-scroll">
@@ -132,7 +134,7 @@ export function ScoreHistoryChart({ columns, dimension }: { columns: ChartColumn
                     {DIMENSIONS[key].name}
                   </th>
                 ))}
-                {dimension === "all" && <th scope="col">Total</th>}
+                {showsTotal && <th scope="col">Total</th>}
               </tr>
             </thead>
             <tbody>
@@ -144,7 +146,7 @@ export function ScoreHistoryChart({ columns, dimension }: { columns: ChartColumn
                   {keys.map((key) => (
                     <td key={key}>{column.scores[key]}</td>
                   ))}
-                  {dimension === "all" && <td>{column.total}</td>}
+                  {showsTotal && <td>{column.total}</td>}
                 </tr>
               ))}
             </tbody>

@@ -1,8 +1,8 @@
-import { and, desc, eq, isNotNull } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { assessments, categories, recordings, topics } from "@/db/schema";
 import type { DimensionKey } from "@/lib/assessment/dimensions";
-import { dimensionScoreColumns } from "@/lib/assessment/status";
+import { dimensionScoreColumns, scoredAssessmentOf } from "@/lib/assessment/status";
 import { type CastFocusVote, recentFocusVotes } from "@/lib/focus-votes";
 import type { FrameworkId } from "@/lib/frameworks";
 
@@ -12,7 +12,7 @@ export const RECENT_ASSESSMENTS = 10;
 export const TOP_AREAS = 3;
 
 /** One of the speaker's recent assessments, as the progress insight is given it. */
-export type InsightAssessment = {
+export type ProgressInsightAssessment = {
   /** When the recording was made. */
   date: Date;
   category: string;
@@ -23,13 +23,13 @@ export type InsightAssessment = {
   areasToImprove: string[];
 };
 
-export type InsightContext = { assessments: InsightAssessment[]; focusVotes: CastFocusVote[] };
+export type ProgressInsightContext = { assessments: ProgressInsightAssessment[]; focusVotes: CastFocusVote[] };
 
 /**
  * What the progress insight is written from: the speaker's last 10 scored assessments, oldest first so
  * trends read in order, and their recent focus votes, newest first.
  */
-export async function insightContext(userId: string): Promise<InsightContext> {
+export async function progressInsightContext(userId: string): Promise<ProgressInsightContext> {
   const rows = await db
     .select({
       date: recordings.createdAt,
@@ -43,7 +43,7 @@ export async function insightContext(userId: string): Promise<InsightContext> {
     .innerJoin(assessments, eq(assessments.recordingId, recordings.id))
     .innerJoin(topics, eq(topics.id, recordings.topicId))
     .innerJoin(categories, eq(categories.id, topics.categoryId))
-    .where(and(eq(recordings.userId, userId), eq(assessments.status, "done"), isNotNull(assessments.totalScore)))
+    .where(scoredAssessmentOf(userId))
     .orderBy(desc(recordings.createdAt), desc(recordings.id))
     .limit(RECENT_ASSESSMENTS);
 

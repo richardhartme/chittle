@@ -1,10 +1,9 @@
 import { eq, sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { assessments, focusVotes, progressInsights, transcripts } from "@/db/schema";
-import { createCategory, createRecording, createTopic, createUser, db, resetDb } from "@/test/db";
+import { createAssessedRecording, createCategory, createRecording, createTopic, createUser, db, resetDb } from "@/test/db";
 import { claudeFails, claudeReplies, claudeRepliesInTurn, stream } from "@/test/claude";
 import { judgementFixture } from "@/test/judgement";
-import { createAssessedRecording } from "@/test/progress-insight";
 import { streamOf, withTempStorage } from "@/test/storage";
 
 vi.mock("@/db", async () => ({ db: (await import("@/test/db")).db }));
@@ -341,6 +340,17 @@ describe("runAssessment", () => {
       // Both assessments: the earlier one, and the one just finished with its total of 550.
       expect(request.messages[0].content).toMatch(/1\. 1 Nov 2026.*650\/1000[\s\S]*2\. .*550\/1000/);
       expect(await insight()).toMatchObject({ text: "Your Structure is up 50 points on last time." });
+    });
+
+    it("is asked for once, without the SDK's automatic retries, so a failure isn't billed to the speaker again", async () => {
+      deepgramReplies(success());
+      await createAssessedRecording(userId, topicId);
+      claudeRepliesInTurn(judgementFixture(), { insight: "An insight." });
+
+      await runAssessment(recordingId, claim, keys);
+
+      expect(insightRequests()).toHaveLength(1);
+      expect(Anthropic).toHaveBeenLastCalledWith(expect.objectContaining({ apiKey: "sk-secret-key", maxRetries: 0 }));
     });
 
     it("replaces the speaker's previous insight", async () => {

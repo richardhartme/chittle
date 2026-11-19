@@ -1,8 +1,8 @@
-import { and, desc, eq, isNotNull } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { assessments, recordings } from "@/db/schema";
 import { DIMENSION_KEYS, DIMENSIONS, MAX_TOTAL, type DimensionKey } from "@/lib/assessment/dimensions";
-import { dimensionScoreColumns } from "@/lib/assessment/status";
+import { dimensionScoreColumns, scoredAssessmentOf } from "@/lib/assessment/status";
 
 /** How many of the most recent assessed recordings the dashboard covers: the last 7, the last 30, or all. */
 export const RANGES = ["7", "30", "all"] as const;
@@ -38,6 +38,24 @@ export function dashboardHref(filters: DashboardFilters): string {
 /** One assessed recording on the dashboard's chart. */
 export type ScoreColumn = { recordingId: string; createdAt: Date; total: number; scores: Record<DimensionKey, number> };
 
+/** How the dashboard shows the selected dimension: every dimension stacked against the total, or one on its own. */
+export type DimensionView = {
+  /** The dimensions drawn, in the fixed colour order. */
+  keys: DimensionKey[];
+  /** What a column is out of: 1000, or the dimension's maximum. */
+  max: number;
+  /** What a column measures: "Score", or the dimension's name. */
+  name: string;
+  /** A column's score in this view: its total, or the dimension's score. */
+  value: (column: Pick<ScoreColumn, "total" | "scores">) => number;
+};
+
+export function dimensionView(dimension: DashboardFilters["dimension"]): DimensionView {
+  if (dimension === "all") return { keys: DIMENSION_KEYS, max: MAX_TOTAL, name: "Score", value: (column) => column.total };
+  const { name, max } = DIMENSIONS[dimension];
+  return { keys: [dimension], max, name, value: (column) => column.scores[dimension] };
+}
+
 export type ScoreHistory = {
   /** The assessed recordings in range, oldest first. */
   columns: ScoreColumn[];
@@ -54,8 +72,8 @@ export async function scoreHistory(userId: string, filters: DashboardFilters): P
     .select({ recordingId: recordings.id, createdAt: recordings.createdAt, total: assessments.totalScore, scores: dimensionScoreColumns })
     .from(recordings)
     .innerJoin(assessments, eq(assessments.recordingId, recordings.id))
-    .where(and(eq(recordings.userId, userId), eq(assessments.status, "done"), isNotNull(assessments.totalScore)))
-    .orderBy(desc(recordings.createdAt));
+    .where(scoredAssessmentOf(userId))
+    .orderBy(desc(recordings.createdAt), desc(recordings.id));
   const rows = filters.range === "all" ? await query : await query.limit(Number(filters.range));
 
   const columns = rows.reverse().map((row) => ({
@@ -66,13 +84,10 @@ export async function scoreHistory(userId: string, filters: DashboardFilters): P
   }));
   if (columns.length === 0) return { columns, average: null };
 
-  const { dimension } = filters;
-  const values = columns.map((column) => (dimension === "all" ? column.total : column.scores[dimension]));
+  const view = dimensionView(filters.dimension);
+  const values = columns.map(view.value);
   return {
     columns,
-    average: {
-      score: Math.round(values.reduce((sum, value) => sum + value, 0) / values.length),
-      max: dimension === "all" ? MAX_TOTAL : DIMENSIONS[dimension].max,
-    },
+    average: { score: Math.round(values.reduce((sum, value) => sum + value, 0) / values.length), max: view.max },
   };
 }

@@ -93,6 +93,7 @@ _Avoid_: Model answer, example answer
 
 **Progress insight**:
 A coaching observation across a speaker's recent assessments, shown on their dashboard.
+On the dashboard, its card is headed "Coach's insight".
 _Avoid_: Coach insights (those are about one recording), trend
 
 **Filler word**:

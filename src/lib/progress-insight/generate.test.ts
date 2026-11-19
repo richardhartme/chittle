@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { InsightAssessment } from "./context";
-import { buildInsightRequest } from "./generate";
+import type { ProgressInsightAssessment } from "./context";
+import { buildProgressInsightRequest } from "./generate";
 
 const scores = { structure: 150, conciseness: 120, confidence: 80, pronunciation: 140, fillerRate: 90, pace: 60 };
 
-const assessment = (overrides: Partial<InsightAssessment> = {}): InsightAssessment => ({
+const assessment = (overrides: Partial<ProgressInsightAssessment> = {}): ProgressInsightAssessment => ({
   date: new Date(Date.UTC(2026, 10, 3, 9)),
   category: "Interview",
   framework: "star",
@@ -32,12 +32,12 @@ const context = {
   ],
 };
 
-const userMessage = () => buildInsightRequest(context).messages[0].content as string;
-const systemPrompt = () => (buildInsightRequest(context).system as { text: string }[]).map((b) => b.text).join("\n");
+const userMessage = () => buildProgressInsightRequest(context).messages[0].content as string;
+const systemPrompt = () => (buildProgressInsightRequest(context).system as { text: string }[]).map((b) => b.text).join("\n");
 
-describe("buildInsightRequest", () => {
+describe("buildProgressInsightRequest", () => {
   it("asks claude-opus-5-5 for a single insight string as structured output", () => {
-    const request = buildInsightRequest(context);
+    const request = buildProgressInsightRequest(context);
 
     expect(request.model).toBe("claude-opus-5-5");
     expect(request.output_config.format).toMatchObject({

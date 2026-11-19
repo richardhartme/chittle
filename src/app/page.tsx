@@ -6,7 +6,15 @@ import { db } from "@/db";
 import { recordings, type User } from "@/db/schema";
 import { DIMENSION_KEYS, DIMENSIONS } from "@/lib/assessment/dimensions";
 import { getCurrentUser } from "@/lib/auth/session";
-import { dashboardHref, parseDashboardFilters, RANGES, scoreHistory, type DashboardFilters, type Range } from "@/lib/dashboard";
+import {
+  dashboardHref,
+  dimensionView,
+  parseDashboardFilters,
+  RANGES,
+  scoreHistory,
+  type DashboardFilters,
+  type Range,
+} from "@/lib/dashboard";
 import { formatDate } from "@/lib/format";
 import { hasProviderKeys } from "@/lib/provider-keys";
 import { ScoreHistoryChart } from "./score-history-chart";
@@ -22,6 +30,7 @@ const RANGE_LABELS: Record<Range, string> = { "7": "Last 7", "30": "Last 30", al
 /** The signed-in home page: the average score, the chart of recent scores, and the way to practise (SPEC → Dashboard). */
 async function Dashboard({ user, filters }: { user: User; filters: DashboardFilters }) {
   const history = await scoreHistory(user.id, filters);
+  const { value, ...view } = dimensionView(filters.dimension);
 
   return (
     <>
@@ -39,7 +48,7 @@ async function Dashboard({ user, filters }: { user: User; filters: DashboardFilt
           <section className="card stack" aria-labelledby="average-heading">
             <div>
               <h2 id="average-heading" className="dashboard-label">
-                Average {filters.dimension === "all" ? "score" : DIMENSIONS[filters.dimension].name.toLowerCase()}
+                Average {view.name.toLowerCase()}
               </h2>
               <p className="score dashboard-average">
                 <strong>{history.average.score}</strong>
@@ -50,13 +59,15 @@ async function Dashboard({ user, filters }: { user: User; filters: DashboardFilt
               </p>
             </div>
             <ScoreHistoryChart
-              dimension={filters.dimension}
-              columns={history.columns.map(({ createdAt, ...column }) => ({ ...column, date: formatDate(createdAt) }))}
+              view={view}
+              columns={history.columns.map(({ createdAt, ...column }) => ({
+                ...column,
+                date: formatDate(createdAt),
+                value: value(column),
+              }))}
             />
           </section>
-          <Suspense fallback={null}>
-            <ProgressInsightCard userId={user.id} />
-          </Suspense>
+          <ProgressInsight userId={user.id} />
         </>
       )}
     </>
@@ -101,7 +112,19 @@ function FilterGroup({ label, options }: { label: string; options: { label: stri
   );
 }
 
-/** No assessed recordings yet: start one, add the keys assessment needs, or wait for it to finish. */
+/** The progress insight card, streamed in on its own so the rest of the dashboard needn't wait for it. */
+function ProgressInsight({ userId }: { userId: string }) {
+  return (
+    <Suspense fallback={null}>
+      <ProgressInsightCard userId={userId} />
+    </Suspense>
+  );
+}
+
+/**
+ * No assessed recordings yet: start one, or add the keys assessment needs, or wait for it to finish.
+ * Once there are recordings, the coach's insight card says when its insights will appear.
+ */
 async function NothingAssessed({ userId }: { userId: string }) {
   const recordingCount = await db.$count(recordings, eq(recordings.userId, userId));
   if (recordingCount === 0) {
@@ -117,29 +140,31 @@ async function NothingAssessed({ userId }: { userId: string }) {
       </section>
     );
   }
-  if (!(await hasProviderKeys(userId))) {
-    return (
-      <section className="card stack dashboard-empty">
-        <h2>Your recordings aren&apos;t assessed yet</h2>
-        <p className="muted">
-          Assessment runs on your own Deepgram and Anthropic keys. Add them and your recordings can be scored.
-        </p>
-        <div>
-          <Link href="/account" className="button">
-            Add your keys on Account
-          </Link>
-        </div>
-      </section>
-    );
-  }
   return (
-    <section className="card stack dashboard-empty">
-      <h2>No results yet</h2>
-      <p className="muted">
-        Your scores appear here once your recordings are assessed. You can check on them in your{" "}
-        <Link href="/library">library</Link>.
-      </p>
-    </section>
+    <>
+      {(await hasProviderKeys(userId)) ? (
+        <section className="card stack dashboard-empty">
+          <h2>No results yet</h2>
+          <p className="muted">
+            Your scores appear here once your recordings are assessed. You can check on them in your{" "}
+            <Link href="/library">library</Link>.
+          </p>
+        </section>
+      ) : (
+        <section className="card stack dashboard-empty">
+          <h2>Your recordings aren&apos;t assessed yet</h2>
+          <p className="muted">
+            Assessment runs on your own Deepgram and Anthropic keys. Add them and your recordings can be scored.
+          </p>
+          <div>
+            <Link href="/account" className="button">
+              Add your keys on Account
+            </Link>
+          </div>
+        </section>
+      )}
+      <ProgressInsight userId={userId} />
+    </>
   );
 }
 
