@@ -1,5 +1,7 @@
 import { eq } from "drizzle-orm";
 import Link from "next/link";
+import { Suspense } from "react";
+import { ProgressInsightCard } from "@/components/progress-insight-card";
 import { db } from "@/db";
 import { recordings, type User } from "@/db/schema";
 import { DIMENSION_KEYS, DIMENSIONS } from "@/lib/assessment/dimensions";
@@ -52,7 +54,9 @@ async function Dashboard({ user, filters }: { user: User; filters: DashboardFilt
               columns={history.columns.map(({ createdAt, ...column }) => ({ ...column, date: formatDate(createdAt) }))}
             />
           </section>
-          {/* progress-insight: <ProgressInsightCard userId={user.id} /> */}
+          <Suspense fallback={null}>
+            <ProgressInsightCard userId={user.id} />
+          </Suspense>
         </>
       )}
     </>
