@@ -21,12 +21,28 @@ export async function anthropicMock(importOriginal: () => Promise<unknown>) {
   };
 }
 
-/** Claude's reply to the judging request, as the stream's final message. */
-export function claudeReplies(reply: unknown, stop_reason = "end_turn") {
+const replyOf = (reply: unknown, stop_reason: string) => {
   const text = typeof reply === "string" ? reply : JSON.stringify(reply);
-  stream.mockReturnValue({ finalMessage: async () => ({ stop_reason, content: [{ type: "text", text }] }) });
+  return { finalMessage: async () => ({ stop_reason, content: [{ type: "text", text }] }) };
+};
+
+/** Claude's reply to every request, as the stream's final message. */
+export function claudeReplies(reply: unknown, stop_reason = "end_turn") {
+  stream.mockReturnValue(replyOf(reply, stop_reason));
 }
 
 export function claudeFails(error: Error) {
   stream.mockReturnValue({ finalMessage: () => Promise.reject(error) });
+}
+
+/**
+ * Claude's replies to the next requests, one each, in order: a reply, or an `Error` for a request that
+ * fails. Later requests get the reply set by `claudeReplies`.
+ */
+export function claudeRepliesInTurn(...replies: unknown[]) {
+  for (const reply of replies) {
+    stream.mockReturnValueOnce(
+      reply instanceof Error ? { finalMessage: () => Promise.reject(reply) } : replyOf(reply, "end_turn"),
+    );
+  }
 }

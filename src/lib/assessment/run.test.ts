@@ -1,9 +1,10 @@
 import { eq, sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { assessments, focusVotes, transcripts } from "@/db/schema";
+import { assessments, focusVotes, progressInsights, transcripts } from "@/db/schema";
 import { createCategory, createRecording, createTopic, createUser, db, resetDb } from "@/test/db";
-import { claudeFails, claudeReplies, stream } from "@/test/claude";
+import { claudeFails, claudeReplies, claudeRepliesInTurn, stream } from "@/test/claude";
 import { judgementFixture } from "@/test/judgement";
+import { createAssessedRecording } from "@/test/progress-insight";
 import { streamOf, withTempStorage } from "@/test/storage";
 
 vi.mock("@/db", async () => ({ db: (await import("@/test/db")).db }));
@@ -318,5 +319,82 @@ describe("runAssessment", () => {
     await runAssessment(recordingId, stale, keys);
 
     expect(await assessment()).toMatchObject({ status: "pending", startedAt: retry });
+  });
+
+  describe("progress insight", () => {
+    const insight = async () => (await db.select().from(progressInsights).where(eq(progressInsights.userId, userId)))[0];
+    const insightRequests = () =>
+      stream.mock.calls.map(([request]) => request).filter((request) => "insight" in (request.output_config.format.schema.properties ?? {}));
+
+    it("is refreshed with Claude, using the speaker's key, once the speaker has two assessments", async () => {
+      deepgramReplies(success());
+      await createAssessedRecording(userId, topicId, { createdAt: new Date(Date.UTC(2026, 10, 1)) });
+      claudeRepliesInTurn(judgementFixture(), { insight: "Your Structure is up 50 points on last time." });
+
+      await runAssessment(recordingId, claim, keys);
+
+      expect((await assessment()).status).toBe("done");
+      expect(stream).toHaveBeenCalledTimes(2);
+      expect(Anthropic).toHaveBeenLastCalledWith(expect.objectContaining({ apiKey: "sk-secret-key" }));
+      const [request] = insightRequests();
+      expect(request.model).toBe("claude-opus-5-5");
+      // Both assessments: the earlier one, and the one just finished with its total of 550.
+      expect(request.messages[0].content).toMatch(/1\. 1 Nov 2026.*650\/1000[\s\S]*2\. .*550\/1000/);
+      expect(await insight()).toMatchObject({ text: "Your Structure is up 50 points on last time." });
+    });
+
+    it("replaces the speaker's previous insight", async () => {
+      deepgramReplies(success());
+      await createAssessedRecording(userId, topicId);
+      const old = new Date(Date.UTC(2026, 10, 1));
+      await db.insert(progressInsights).values({ userId, text: "An old insight.", generatedAt: old });
+      claudeRepliesInTurn(judgementFixture(), { insight: "A fresh insight." });
+
+      await runAssessment(recordingId, claim, keys);
+
+      const row = await insight();
+      expect(row.text).toBe("A fresh insight.");
+      expect(row.generatedAt.getTime()).toBeGreaterThan(old.getTime());
+    });
+
+    it("isn't asked for when this is the speaker's first assessment", async () => {
+      deepgramReplies(success());
+
+      await runAssessment(recordingId, claim, keys);
+
+      expect(stream).toHaveBeenCalledTimes(1);
+      expect(insightRequests()).toEqual([]);
+      expect(await insight()).toBeUndefined();
+    });
+
+    it("isn't asked for when the assessment fails", async () => {
+      deepgramReplies(success());
+      await createAssessedRecording(userId, topicId);
+      claudeFails(new AuthenticationError(401, { type: "error" }, "invalid x-api-key", new Headers()));
+
+      await runAssessment(recordingId, claim, keys);
+
+      expect(insightRequests()).toEqual([]);
+    });
+
+    it.each([
+      ["Claude errors", new InternalServerError(500, { type: "error" }, `overloaded ${keys.anthropic}`, new Headers())],
+      ["Claude's reply doesn't match the schema", { notAnInsight: true }],
+    ])("leaves the assessment done and the previous insight in place when %s, and logs it without the key", async (_, reply) => {
+      const log = vi.spyOn(console, "error").mockImplementation(() => {});
+      deepgramReplies(success());
+      await createAssessedRecording(userId, topicId);
+      const old = new Date(Date.UTC(2026, 10, 1));
+      await db.insert(progressInsights).values({ userId, text: "An old insight.", generatedAt: old });
+      claudeRepliesInTurn(judgementFixture(), reply);
+
+      await runAssessment(recordingId, claim, keys);
+
+      expect(await assessment()).toMatchObject({ status: "done", error: null, totalScore: 550 });
+      expect(await insight()).toMatchObject({ text: "An old insight.", generatedAt: old });
+      expect(log).toHaveBeenCalled();
+      expect(JSON.stringify(log.mock.calls)).not.toContain(keys.anthropic);
+      log.mockRestore();
+    });
   });
 });

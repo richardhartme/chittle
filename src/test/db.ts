@@ -1,4 +1,4 @@
-import { fileURLToPath } from "node:url";
+import path from "node:path";
 import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
@@ -13,7 +13,8 @@ import type { FrameworkId } from "@/lib/frameworks";
 const client = new PGlite();
 export const db = drizzle(client, { schema });
 
-await migrate(db, { migrationsFolder: fileURLToPath(new URL("../../drizzle", import.meta.url)) });
+// A path, not a URL: in component tests jsdom replaces the global URL, which fileURLToPath rejects.
+await migrate(db, { migrationsFolder: path.resolve(import.meta.dirname, "../../drizzle") });
 
 export async function resetDb(): Promise<void> {
   await client.exec("truncate table users, magic_links, categories restart identity cascade");

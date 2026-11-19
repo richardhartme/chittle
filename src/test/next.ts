@@ -73,7 +73,8 @@ export const after = vi.fn((task: () => unknown) => {
   afterTasks.push(Promise.resolve().then(task));
 });
 
-export const serverMock = { after };
+/** Outside a request there's nothing to wait for, so `connection()` resolves straight away. */
+export const serverMock = { after, connection: async () => {} };
 
 export async function afterSettled(): Promise<void> {
   await Promise.all(afterTasks.splice(0));
