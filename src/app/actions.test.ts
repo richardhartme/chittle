@@ -46,6 +46,7 @@ import {
 } from "./actions";
 import { measure } from "@/lib/assessment/measure";
 import { scoreJudgement } from "@/lib/assessment/score";
+import { SCORING_VERSION } from "@/lib/assessment/version";
 import { focusVotesOn } from "@/lib/focus-votes";
 
 const temp = withTempStorage();
@@ -193,7 +194,7 @@ describe("assessRecording", () => {
     expect(fetch).not.toHaveBeenCalled();
     expect(stream).toHaveBeenCalledTimes(2);
     const row = await assessmentOf(recording.id);
-    expect(row).toMatchObject({ status: "done", error: null, scoringVersion: 3, structureScore: 200 });
+    expect(row).toMatchObject({ status: "done", error: null, scoringVersion: SCORING_VERSION, structureScore: 200 });
     expect(row.pronunciationScore).toBe(150); // every word heard clearly, no longer the old 1
     expect(row.result?.judged?.overview).toBe("A clear answer that could open more strongly.");
     expect(refresh).toHaveBeenCalled();

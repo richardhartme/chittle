@@ -90,12 +90,12 @@ Structure is judged against the category's framework. Uptalk isn't scored (it ne
 **Feedback**
 - Each dimension has a summary paragraph, and each sub-score has its own feedback.
 - **Overview**, **strengths** and **areas to improve**. Each area to improve takes a **focus vote** (thumbs up: "I want to work on this", thumbs down: "not useful"). Votes are given to later assessments and to the progress insight.
-- **Coach insights**: "How you said it" (the answer's points in the order spoken) against a "Better order" with an explanation, "Try opening with", and "Shorter ways to say it" (original sentence, shorter version, words saved).
+- **Coach insights**: a short summary of the one change that would help most, "How you said it" (the answer's points in the order spoken) against a "Better order" with an explanation, "Try opening with", and "Shorter ways to say it" (original sentence, shorter version, words saved).
 - **Ideal version**: the user's answer rewritten in the category's framework, one section per framework step.
 
 ### Results page (`/library/[id]`)
-- Player, score composition bar (each dimension's share of 1000), six dimension cards, overview, strengths, areas to improve, and the transcript as plain text.
-- Clicking a dimension card opens a drawer (native `<dialog>`) with its sub-scores, "View feedback" toggles, statistics and charts. A "Coach insights" button opens a drawer with the coach insights and the ideal version.
+- Player, coach insights card, score composition bar (each dimension's share of 1000), six dimension cards, overview, strengths, areas to improve, and the transcript as plain text.
+- Clicking a dimension card opens a drawer (native `<dialog>`) with its sub-scores, "View feedback" toggles, statistics and charts. A "Coach insights" card above the score shows the summary (or, for assessments from before it, the suggested opening) and opens a drawer with the coach insights and the ideal version.
 - **Practise again** opens setup with the same topic, speaking time and mode filled in. When the speaker has an earlier assessed recording of the topic, the results show its score and the change beside the total (linking to it), and each dimension card shows its change. A Home button sits beside it.
 - Re-assess, Retry or Assess as described above, and Delete.
 

@@ -2,6 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { assessments, recordings, transcripts } from "@/db/schema";
+import { SCORING_VERSION } from "@/lib/assessment/version";
 import { signIn } from "@/test/auth";
 import { createCategory, createTopic, db, resetDb } from "@/test/db";
 import { saveTestKeys } from "@/test/keys";
@@ -205,7 +206,7 @@ describe("POST /api/recordings", () => {
 
         const { id } = await res.json();
         expect(fetch).toHaveBeenCalledTimes(1);
-        expect(await db.select().from(assessments)).toMatchObject([{ recordingId: id, status: "done", scoringVersion: 3 }]);
+        expect(await db.select().from(assessments)).toMatchObject([{ recordingId: id, status: "done", scoringVersion: SCORING_VERSION }]);
         expect(await db.select().from(transcripts)).toMatchObject([{ recordingId: id, text: "Hello there." }]);
       });
 

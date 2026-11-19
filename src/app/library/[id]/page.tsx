@@ -20,7 +20,7 @@ import { hasProviderKeys } from "@/lib/provider-keys";
 import { formatDate, formatDuration } from "@/lib/format";
 import { practiceAgainHref, recordingMode } from "@/lib/practice";
 import { AssessmentPoller } from "./assessment-poller";
-import { CoachInsightsDrawer } from "./coach-insights";
+import { CoachInsightsCard } from "./coach-insights";
 import { DeleteForm } from "./delete-form";
 import { DimensionCards } from "./dimension-cards";
 import { OverallResult } from "./overall-result";
@@ -120,6 +120,7 @@ async function AssessmentPanel({ recording, assessment }: { recording: Recording
     return (
       <>
         <ReassessPanel recordingId={recordingId} scoringVersion={row?.scoringVersion ?? null} canReassess={canReassess} />
+        <CoachInsightsCard insights={judged?.coachInsights} />
         {/* Assessments from before judging was added have no total or feedback. */}
         {judged && row.total !== null && (
           <ScoreComposition total={row.total} scores={scoredOf(row.scores)} previous={compared} />
@@ -144,7 +145,6 @@ async function AssessmentPanel({ recording, assessment }: { recording: Recording
             focusVotes={focusVotes}
           />
         )}
-        <CoachInsightsDrawer insights={judged?.coachInsights} />
         <section className="card stack">
           <h2>Transcript</h2>
           <p>{row?.transcript ?? "No transcript was stored."}</p>

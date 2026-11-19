@@ -1282,22 +1282,50 @@ html:has(dialog.drawer[open]) {
   font-size: 0.875rem;
 }
 
-/* Coach insights: a floating button that opens a drawer like the dimension drawer. */
-.coach-insights-button {
-  position: fixed;
-  right: 1.5rem;
-  bottom: 1.5rem;
-  z-index: 10;
-  box-shadow: var(--shadow);
-}
-
-/* Room at the end of the page, so the floating button never covers the last of it. */
-main:has(.coach-insights-button) {
-  padding-bottom: 6rem;
-}
-
-dialog.drawer.coach-insights {
+/* Coach insights: a card like a dimension card, above the score, that opens a drawer like the dimension drawer. */
+:is(.coach-card, dialog.drawer.coach-insights) {
   --dimension: var(--accent);
+}
+
+.coach-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "name chevron" "summary summary";
+  gap: 0.35rem;
+  width: 100%;
+  margin: 0;
+  padding: 1.1rem 1.25rem;
+  border: 1.5px solid var(--border);
+  border-top: 6px solid var(--dimension);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 400;
+  text-align: left;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.coach-card:hover {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--dimension);
+  transform: translateY(-2px);
+}
+
+.coach-card-name {
+  grid-area: name;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 700;
+  color: var(--heading);
+}
+
+.coach-card .chevron {
+  grid-area: chevron;
+  color: var(--muted);
+}
+
+.coach-card-summary {
+  grid-area: summary;
 }
 
 .coach-points {
@@ -1671,12 +1699,14 @@ dialog.drawer.coach-insights {
 
 @media (prefers-reduced-motion: reduce) {
   .recording-list .card,
-  .dimension-card {
+  .dimension-card,
+  .coach-card {
     transition: none;
   }
 
   .recording-list .card:hover,
-  .dimension-card:hover {
+  .dimension-card:hover,
+  .coach-card:hover {
     transform: none;
   }
 

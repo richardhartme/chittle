@@ -67,6 +67,9 @@ export const scoringSchema = z.object({
  * request, as one schema with the scoring would compile to a grammar larger than the API accepts.
  */
 export const coachInsightsSchema = z.object({
+  summary: z
+    .string()
+    .describe("1 or 2 sentences on the one change to how the answer was said that would help most."),
   howYouSaidIt: z
     .array(z.string())
     .describe("The answer's main points in the order the speaker made them, as 3 to 7 short sentences."),

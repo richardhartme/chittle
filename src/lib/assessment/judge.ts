@@ -76,6 +76,7 @@ Focus votes: the speaker may have voted on areas to improve from their earlier a
 const COACH_PROMPT = `You are a speaking coach helping someone improve a recorded answer to an impromptu speaking topic. You receive the transcript, the topic, its category and the framework answers in that category are judged against.
 
 Rework the speaker's own answer, so they can see a better version of it:
+- Summary: in 1 or 2 sentences, the one change to how they said it that would help most, and why. It's what they read first, so make it specific to this answer.
 - How you said it: the answer's main points in the order they were made. Better order: the same points in the order that would land best, with a paragraph on why.
 - Try opening with: one strong first sentence, built from what the speaker went on to say.
 - Shorter ways: pick the wordiest sentences. Give each original exactly as it appears in the transcript, word for word, and a shorter version that keeps its meaning.

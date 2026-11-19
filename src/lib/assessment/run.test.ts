@@ -13,6 +13,7 @@ import Anthropic, { AuthenticationError, InternalServerError } from "@anthropic-
 import { claimAssessment } from "./claim";
 import { scoringSchema } from "./judgement";
 import { runAssessment } from "./run";
+import { SCORING_VERSION } from "./version";
 
 const temp = withTempStorage();
 const keys = { deepgram: "dg-secret-key", anthropic: "sk-secret-key" };
@@ -146,7 +147,7 @@ describe("runAssessment", () => {
     expect(message).not.toContain("Someone else's area");
   });
 
-  it("stores a done assessment with every score, the total, the feedback and the coach insights, at scoring version 3", async () => {
+  it("stores a done assessment with every score, the total, the feedback and the coach insights, at the current scoring version", async () => {
     deepgramReplies(success());
 
     await runAssessment(recordingId, claim, keys);
@@ -155,7 +156,7 @@ describe("runAssessment", () => {
     expect(row).toMatchObject({
       status: "done",
       error: null,
-      scoringVersion: 3,
+      scoringVersion: SCORING_VERSION,
       structureScore: 200, // five sub-scores of 40
       concisenessScore: 120,
       confidenceScore: 80,
@@ -170,7 +171,11 @@ describe("runAssessment", () => {
       strengths: ["Clear example"],
       areasToImprove: ["Open with your point", "Cut the hedges"],
       dimensions: { structure: { summary: "Structure summary." } },
-      coachInsights: { tryOpeningWith: "We should ship it now.", idealVersion: [{ step: "Point" }, { step: "Reason" }] },
+      coachInsights: {
+        summary: "Lead with your recommendation; you saved it for the end.",
+        tryOpeningWith: "We should ship it now.",
+        idealVersion: [{ step: "Point" }, { step: "Reason" }],
+      },
     });
   });
 
@@ -229,7 +234,7 @@ describe("runAssessment", () => {
 
     await runAssessment(recordingId, claim, keys);
 
-    expect(await assessment()).toMatchObject({ status: "done", scoringVersion: 3, pronunciationScore: 0 });
+    expect(await assessment()).toMatchObject({ status: "done", scoringVersion: SCORING_VERSION, pronunciationScore: 0 });
   });
 
   it("falls back to the plain word when Deepgram leaves out the punctuated one", async () => {

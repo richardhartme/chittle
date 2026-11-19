@@ -41,6 +41,7 @@ export function judgementFixture(overrides: Partial<Judgement> = {}): Judgement 
     strengths: ["Clear example"],
     areasToImprove: ["Open with your point", "Cut the hedges"],
     coachInsights: {
+      summary: "Lead with your recommendation; you saved it for the end.",
       howYouSaidIt: ["You said the plan was good.", "You said to ship it."],
       betterOrder: ["Ship it now.", "The plan is good."],
       orderExplanation: "Lead with your recommendation, then back it up.",

@@ -15,7 +15,11 @@ export type ScoredSubScore = { score: number; feedback: string };
 
 export type ShorterWay = { original: string; shorter: string; savedWords: number };
 
-export type CoachInsights = Omit<Judgement["coachInsights"], "shorterWays"> & { shorterWays: ShorterWay[] };
+export type CoachInsights = Omit<Judgement["coachInsights"], "summary" | "shorterWays"> & {
+  /** From scoring version 4. */
+  summary?: string;
+  shorterWays: ShorterWay[];
+};
 
 /** The judging step's part of `assessments.result`, after its scores and counts have been checked. */
 export type JudgedResult = {

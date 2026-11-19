@@ -157,7 +157,7 @@ describe("buildCoachRequest", () => {
     const scoring = buildScoringRequest(input()).output_config.format.schema.properties as Record<string, unknown>;
 
     expect(Object.keys(coach)).toEqual(
-      expect.arrayContaining(["howYouSaidIt", "betterOrder", "tryOpeningWith", "shorterWays", "idealVersion"]),
+      expect.arrayContaining(["summary", "howYouSaidIt", "betterOrder", "tryOpeningWith", "shorterWays", "idealVersion"]),
     );
     expect(coach).not.toHaveProperty("structure");
     expect(scoring).toHaveProperty("structure");

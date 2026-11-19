@@ -84,7 +84,7 @@ A speaker's thumbs up ("I want to work on this") or thumbs down ("not useful") o
 _Avoid_: Rating, like
 
 **Coach insights**:
-The rewrite-based feedback for one recording: how it was said compared with a better order, a suggested opening, shorter ways to say long sentences, and the ideal version.
+The rewrite-based feedback for one recording: a summary of the one change that would help most, how it was said compared with a better order, a suggested opening, shorter ways to say long sentences, and the ideal version.
 _Avoid_: Tips
 
 **Ideal version**:

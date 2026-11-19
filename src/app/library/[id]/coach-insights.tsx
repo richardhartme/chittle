@@ -1,16 +1,19 @@
 "use client";
 
-import { useRef } from "react";
+import { useId, useRef } from "react";
 import type { CoachInsights } from "@/lib/assessment/score";
 import { DrawerCloseButton, useDrawer } from "./drawer";
 
 /**
- * A floating "Coach insights" button that opens a drawer with the coach insights, ending with the
- * ideal version. Assessments from before scoring version 3 have none, so there's no button for them.
+ * A card above the score with the coach's summary, opening a drawer with all the coach insights,
+ * ending with the ideal version. Version 3 assessments have no summary, so the card shows the
+ * suggested opening instead. Assessments from before version 3 have no coach insights, so no card.
  */
-export function CoachInsightsDrawer({ insights }: { insights?: CoachInsights }) {
-  const button = useRef<HTMLButtonElement>(null);
-  const drawer = useDrawer<true>(() => button.current?.focus());
+export function CoachInsightsCard({ insights }: { insights?: CoachInsights }) {
+  const card = useRef<HTMLButtonElement>(null);
+  const drawer = useDrawer<true>(() => card.current?.focus());
+  const headingId = useId();
+  const summaryId = useId();
 
   if (!insights) return null;
 
@@ -18,12 +21,22 @@ export function CoachInsightsDrawer({ insights }: { insights?: CoachInsights }) 
     <>
       <button
         type="button"
-        ref={button}
-        className="primary coach-insights-button"
+        ref={card}
+        className="card coach-card"
         aria-haspopup="dialog"
+        aria-labelledby={headingId}
+        aria-describedby={summaryId}
         onClick={() => drawer.open(true)}
       >
-        Coach insights
+        <span id={headingId} className="coach-card-name">
+          Coach insights
+        </span>
+        <svg className="chevron" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20">
+          <path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+        <span id={summaryId} className="coach-card-summary">
+          {insights.summary ?? <>Try opening with: “{insights.tryOpeningWith}”</>}
+        </span>
       </button>
 
       <dialog {...drawer.dialogProps} className="drawer coach-insights" aria-labelledby="coach-insights-title">
@@ -34,13 +47,13 @@ export function CoachInsightsDrawer({ insights }: { insights?: CoachInsights }) 
 }
 
 function Drawer({ insights, onClose }: { insights: CoachInsights; onClose: () => void }) {
-  const { howYouSaidIt, betterOrder, orderExplanation, tryOpeningWith, shorterWays, idealVersion } = insights;
+  const { summary, howYouSaidIt, betterOrder, orderExplanation, tryOpeningWith, shorterWays, idealVersion } = insights;
   return (
     <div className="drawer-body stack">
       <header className="drawer-header">
         <div>
           <h2 id="coach-insights-title">Coach insights</h2>
-          <p className="muted">Your own answer, reworked.</p>
+          {summary ? <p>{summary}</p> : <p className="muted">Your own answer, reworked.</p>}
         </div>
         <DrawerCloseButton onClick={onClose} />
       </header>
