@@ -8,7 +8,7 @@ import { formatDuration } from "@/lib/format";
 import { FRAMEWORKS, type FrameworkId } from "@/lib/frameworks";
 import { DIMENSIONS } from "./dimensions";
 import { AssessmentError } from "./errors";
-import { judgementSchema, type Judgement } from "./judgement";
+import { coachInsightsSchema, scoringSchema, type Judgement } from "./judgement";
 import type { Measurement } from "./measure";
 
 /** Fixed, so assessments stay comparable. Changing it means bumping the scoring version. */
@@ -35,7 +35,8 @@ export type JudgeInput = {
   focusVotes: CastFocusVote[];
 };
 
-const format = betaZodOutputFormat(judgementSchema);
+const scoringFormat = betaZodOutputFormat(scoringSchema);
+const coachFormat = betaZodOutputFormat(coachInsightsSchema);
 
 const rubric = (["structure", "conciseness", "confidence"] as const)
   .map((key) => {
@@ -45,7 +46,7 @@ const rubric = (["structure", "conciseness", "confidence"] as const)
   })
   .join("\n\n");
 
-const SYSTEM_PROMPT = `You are a speaking coach assessing a recording of someone answering an impromptu speaking topic. You receive the transcript, the topic, its category and the framework answers in that category are judged against, and metrics measured from the transcript's word timings and recognition confidence.
+const SCORING_PROMPT = `You are a speaking coach assessing a recording of someone answering an impromptu speaking topic. You receive the transcript, the topic, its category and the framework answers in that category are judged against, and metrics measured from the transcript's word timings and recognition confidence.
 
 Score the judged dimensions against this rubric, giving each sub-score a whole number from 0 to its maximum:
 
@@ -70,13 +71,19 @@ Feedback:
 Focus votes: the speaker may have voted on areas to improve from their earlier assessments, listed under "Areas I want to work on" and "Feedback I didn't find useful".
 - Areas I want to work on: keep checking them. Say whether this answer improved on them, and list them again in areas to improve if it didn't.
 - Feedback I didn't find useful: don't repeat it, or anything like it.
-- Votes are context, not scores. Never raise or lower a score because of them.
+- Votes are context, not scores. Never raise or lower a score because of them.`;
 
-Coach insights rework the speaker's own answer, so they can see a better version of it:
+const COACH_PROMPT = `You are a speaking coach helping someone improve a recorded answer to an impromptu speaking topic. You receive the transcript, the topic, its category and the framework answers in that category are judged against.
+
+Rework the speaker's own answer, so they can see a better version of it:
 - How you said it: the answer's main points in the order they were made. Better order: the same points in the order that would land best, with a paragraph on why.
 - Try opening with: one strong first sentence, built from what the speaker went on to say.
 - Shorter ways: pick the wordiest sentences. Give each original exactly as it appears in the transcript, word for word, and a shorter version that keeps its meaning.
-- Ideal version: the speaker's answer rewritten to follow the category's framework, in their own voice. Keep their facts and examples, and don't invent new ones; where they skipped a step, write it from what they did say.`;
+- Ideal version: the speaker's answer rewritten to follow the category's framework, in their own voice. Keep their facts and examples, and don't invent new ones; where they skipped a step, write it from what they did say.
+
+Guidance:
+- Write in British English, speaking to the speaker as "you".
+- The transcript comes from speech recognition, so ignore transcription errors and missing punctuation.`;
 
 const oneDecimal = (n: number) => (Math.round(n * 10) / 10).toString();
 const whole = (n: number) => Math.round(n).toString();
@@ -92,29 +99,39 @@ function metrics(measured: Measurement): string {
   ].join("\n");
 }
 
-function userMessage(input: JudgeInput): string {
+function frameworkSection(input: JudgeInput): string {
   const framework = FRAMEWORKS[input.framework];
   const steps = framework.steps.map((step, i) => `${i + 1}. ${step.label}: ${step.description}`).join("\n");
   return `<topic>${input.topic}</topic>
 <category>${input.category}</category>
 <framework name="${framework.name}">
 ${steps}
-</framework>
+</framework>`;
+}
+
+function scoringMessage(input: JudgeInput): string {
+  return `${frameworkSection(input)}
 <duration>${formatDuration(Math.round(input.durationSeconds))}</duration>
 <measured>
 ${metrics(input.measured)}
 </measured>
 ${focusVotesSection(input.focusVotes)}<transcript>
 ${input.transcript}
+</transcript>`;
+}
+
+function coachMessage(input: JudgeInput): string {
+  const framework = FRAMEWORKS[input.framework];
+  return `${frameworkSection(input)}
+<transcript>
+${input.transcript}
 </transcript>
 Write the ideal version in ${framework.name}, with one entry for each step, in this order: ${framework.steps.map((step) => step.label).join(", ")}.`;
 }
 
-/**
- * The request asking Claude to judge a recording. The system prompt is the same for every recording,
- * so it's cached; everything about the recording is in the user message.
- */
-export function buildJudgeRequest(input: JudgeInput) {
+type OutputFormat<T> = { type: "json_schema"; schema: Record<string, unknown>; parse: (text: string) => T };
+
+function request<T>(system: MessageCreateParamsNonStreaming["system"], content: string, format: OutputFormat<T>) {
   return {
     model: JUDGE_MODEL,
     max_tokens: MAX_TOKENS,
@@ -124,19 +141,33 @@ export function buildJudgeRequest(input: JudgeInput) {
     // The schema alone, without the helper's parse hook: the stream would otherwise parse on its own
     // and throw on a refusal's partial output before stop_reason could be checked.
     output_config: { effort: JUDGE_EFFORT, format: { type: format.type, schema: format.schema } },
-    system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
-    messages: [{ role: "user", content: userMessage(input) }],
+    system,
+    messages: [{ role: "user", content }],
   } satisfies MessageCreateParamsNonStreaming;
 }
 
 /**
- * Asks Claude, with the speaker's key, to judge a recording. A rejected key or a declined assessment
- * throws an `AssessmentError`; anything else throws as it is, for the caller's generic message.
+ * The request asking Claude to score a recording and give feedback. The system prompt is the same for
+ * every recording, so it's cached; everything about the recording is in the user message.
  */
-export async function judge(input: JudgeInput, anthropicKey: string): Promise<Judgement> {
+export function buildScoringRequest(input: JudgeInput) {
+  return request(
+    [{ type: "text", text: SCORING_PROMPT, cache_control: { type: "ephemeral" } }],
+    scoringMessage(input),
+    scoringFormat,
+  );
+}
+
+/** The request asking Claude for the coach insights: the speaker's answer reworked. */
+export function buildCoachRequest(input: JudgeInput) {
+  return request([{ type: "text", text: COACH_PROMPT }], coachMessage(input), coachFormat);
+}
+
+/** Sends one request with the speaker's key and parses the reply against its schema. */
+async function ask<T>(req: MessageCreateParamsNonStreaming, format: OutputFormat<T>, anthropicKey: string): Promise<T> {
   let message;
   try {
-    message = await askClaude(buildJudgeRequest(input), anthropicKey, TIMEOUT_MS);
+    message = await askClaude(req, anthropicKey, TIMEOUT_MS);
   } catch (err) {
     if (err instanceof AuthenticationError) throw new AssessmentError("Anthropic rejected the key.");
     throw err;
@@ -144,4 +175,18 @@ export async function judge(input: JudgeInput, anthropicKey: string): Promise<Ju
   // With fallbacks, a refusal here means every model in the chain declined.
   if (message.stop_reason === "refusal") throw new AssessmentError("The assessment was declined.");
   return format.parse(replyText(message));
+}
+
+/**
+ * Asks Claude, with the speaker's key, to judge a recording: the scoring and the coach insights, in
+ * two requests at once, since one schema for both is too large for structured outputs. A rejected key
+ * or a declined request throws an `AssessmentError`; anything else throws as it is, for the caller's
+ * generic message.
+ */
+export async function judge(input: JudgeInput, anthropicKey: string): Promise<Judgement> {
+  const [scoring, coachInsights] = await Promise.all([
+    ask(buildScoringRequest(input), scoringFormat, anthropicKey),
+    ask(buildCoachRequest(input), coachFormat, anthropicKey),
+  ]);
+  return { ...scoring, coachInsights };
 }

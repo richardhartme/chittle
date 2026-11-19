@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { wordsOf } from "@/test/judgement";
-import { buildJudgeRequest, type JudgeInput } from "./judge";
+import { buildCoachRequest, buildScoringRequest, type JudgeInput } from "./judge";
 import { measure } from "./measure";
 
 const words = wordsOf("Um, so I led the migration. We finished two weeks early.");
@@ -16,18 +16,20 @@ const input = (overrides: Partial<JudgeInput> = {}): JudgeInput => ({
   ...overrides,
 });
 
-const userMessage = (request: ReturnType<typeof buildJudgeRequest>) => {
+type Request = ReturnType<typeof buildScoringRequest>;
+
+const userMessage = (request: Request) => {
   const [message] = request.messages;
   expect(message.role).toBe("user");
   return message.content as string;
 };
 
-const systemPrompt = (request: ReturnType<typeof buildJudgeRequest>) =>
+const systemPrompt = (request: Request) =>
   (request.system as { text: string }[]).map((block) => block.text).join("\n");
 
-describe("buildJudgeRequest", () => {
+describe("buildScoringRequest", () => {
   it("gives Claude the topic, the category and its framework's steps in order", () => {
-    const message = userMessage(buildJudgeRequest(input()));
+    const message = userMessage(buildScoringRequest(input()));
 
     expect(message).toContain("Tell me about a project you are proud of.");
     expect(message).toContain("Interview");
@@ -38,32 +40,15 @@ describe("buildJudgeRequest", () => {
   });
 
   it("uses the framework of the recording's category", () => {
-    const message = userMessage(buildJudgeRequest(input({ category: "Storytelling", framework: "story_arc" })));
+    const message = userMessage(buildScoringRequest(input({ category: "Storytelling", framework: "story_arc" })));
 
     expect(message).toContain("Story arc");
     expect(message).toContain("Turning point");
     expect(message).not.toContain("STAR");
   });
 
-  it("asks for the ideal version with one entry for each of the framework's steps, in order", () => {
-    const star = userMessage(buildJudgeRequest(input()));
-    const storyArc = userMessage(buildJudgeRequest(input({ category: "Storytelling", framework: "story_arc" })));
-
-    expect(star).toMatch(/ideal version.*one entry for each step, in this order: Situation, Task, Action, Result\./i);
-    expect(storyArc).toMatch(
-      /ideal version.*one entry for each step, in this order: Setup, Conflict, Turning point, Resolution, Lesson\./i,
-    );
-  });
-
-  it("tells Claude to quote only sentences that were spoken in Shorter ways, and to keep the speaker's facts", () => {
-    const system = systemPrompt(buildJudgeRequest(input()));
-
-    expect(system).toMatch(/shorter ways.*exactly as it appears in the transcript/i);
-    expect(system).toMatch(/ideal version.*don't invent/i);
-  });
-
   it("gives Claude the transcript, the duration and the measured metrics and scores", () => {
-    const message = userMessage(buildJudgeRequest(input()));
+    const message = userMessage(buildScoringRequest(input()));
 
     expect(message).toContain("Um, so I led the migration. We finished two weeks early.");
     expect(message).toContain("1:15");
@@ -76,8 +61,8 @@ describe("buildJudgeRequest", () => {
   });
 
   it("keeps everything about the recording out of the system prompt, so it can be cached", () => {
-    const one = buildJudgeRequest(input());
-    const other = buildJudgeRequest(input({ topic: "Why this role?", category: "Opinion", framework: "prep", transcript: "Other." }));
+    const one = buildScoringRequest(input());
+    const other = buildScoringRequest(input({ topic: "Why this role?", category: "Opinion", framework: "prep", transcript: "Other." }));
 
     expect(one.system).toEqual(other.system);
     expect(systemPrompt(one)).not.toContain("migration");
@@ -85,7 +70,7 @@ describe("buildJudgeRequest", () => {
   });
 
   it("gives Claude the rubric, with each sub-score's maximum, and the house rules", () => {
-    const system = systemPrompt(buildJudgeRequest(input()));
+    const system = systemPrompt(buildScoringRequest(input()));
 
     expect(system).toMatch(/Logical sequence \(0–50\)/);
     expect(system).toMatch(/Word choice \(0–70\)/);
@@ -98,7 +83,7 @@ describe("buildJudgeRequest", () => {
 
   it("gives Claude the speaker's recent focus votes, grouped up and down, newest first", () => {
     const message = userMessage(
-      buildJudgeRequest(
+      buildScoringRequest(
         input({
           focusVotes: [
             { area: "Open with your point", vote: "up" },
@@ -124,8 +109,8 @@ describe("buildJudgeRequest", () => {
   });
 
   it("leaves out a group with no votes, and the section when there are none", () => {
-    const upOnly = userMessage(buildJudgeRequest(input({ focusVotes: [{ area: "Cut the hedges", vote: "up" }] })));
-    const none = userMessage(buildJudgeRequest(input()));
+    const upOnly = userMessage(buildScoringRequest(input({ focusVotes: [{ area: "Cut the hedges", vote: "up" }] })));
+    const none = userMessage(buildScoringRequest(input()));
 
     expect(upOnly).toContain("Areas I want to work on:\n- Cut the hedges");
     expect(upOnly).not.toContain("didn't find useful");
@@ -133,9 +118,50 @@ describe("buildJudgeRequest", () => {
   });
 
   it("tells Claude to keep checking up-voted areas and not to repeat feedback voted down", () => {
-    const system = systemPrompt(buildJudgeRequest(input()));
+    const system = systemPrompt(buildScoringRequest(input()));
 
     expect(system).toMatch(/areas I want to work on.*keep checking/i);
     expect(system).toMatch(/didn't find useful.*don't repeat/i);
+  });
+});
+
+describe("buildCoachRequest", () => {
+  it("gives Claude the topic, the category, its framework's steps and the transcript", () => {
+    const message = userMessage(buildCoachRequest(input()));
+
+    expect(message).toContain("Tell me about a project you are proud of.");
+    expect(message).toContain("Interview");
+    expect(message).toContain("STAR");
+    expect(message).toContain("Um, so I led the migration. We finished two weeks early.");
+  });
+
+  it("asks for the ideal version with one entry for each of the framework's steps, in order", () => {
+    const star = userMessage(buildCoachRequest(input()));
+    const storyArc = userMessage(buildCoachRequest(input({ category: "Storytelling", framework: "story_arc" })));
+
+    expect(star).toMatch(/ideal version.*one entry for each step, in this order: Situation, Task, Action, Result\./i);
+    expect(storyArc).toMatch(
+      /ideal version.*one entry for each step, in this order: Setup, Conflict, Turning point, Resolution, Lesson\./i,
+    );
+  });
+
+  it("tells Claude to quote only sentences that were spoken in Shorter ways, and to keep the speaker's facts", () => {
+    const system = systemPrompt(buildCoachRequest(input()));
+
+    expect(system).toMatch(/shorter ways.*exactly as it appears in the transcript/i);
+    expect(system).toMatch(/ideal version.*don't invent/i);
+  });
+
+  it("asks only for the coach insights, apart from the scoring, so neither schema is too large to compile", () => {
+    const coach = buildCoachRequest(input()).output_config.format.schema.properties as Record<string, unknown>;
+    const scoring = buildScoringRequest(input()).output_config.format.schema.properties as Record<string, unknown>;
+
+    expect(Object.keys(coach)).toEqual(
+      expect.arrayContaining(["howYouSaidIt", "betterOrder", "tryOpeningWith", "shorterWays", "idealVersion"]),
+    );
+    expect(coach).not.toHaveProperty("structure");
+    expect(scoring).toHaveProperty("structure");
+    expect(scoring).not.toHaveProperty("coachInsights");
+    expect(scoring).not.toHaveProperty("idealVersion");
   });
 });

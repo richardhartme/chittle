@@ -11,6 +11,7 @@ vi.mock("@anthropic-ai/sdk", async (importOriginal) => (await import("@/test/cla
 
 import Anthropic, { AuthenticationError, InternalServerError } from "@anthropic-ai/sdk";
 import { claimAssessment } from "./claim";
+import { scoringSchema } from "./judgement";
 import { runAssessment } from "./run";
 
 const temp = withTempStorage();
@@ -95,7 +96,8 @@ describe("runAssessment", () => {
     await runAssessment(recordingId, claim, keys);
 
     expect(Anthropic).toHaveBeenCalledWith(expect.objectContaining({ apiKey: "sk-secret-key" }));
-    expect(stream).toHaveBeenCalledTimes(1);
+    // The scoring and the coach insights, asked for at once.
+    expect(stream).toHaveBeenCalledTimes(2);
     const request = stream.mock.calls[0][0];
     expect(request).toMatchObject({
       model: "claude-opus-5-5",
@@ -206,6 +208,17 @@ describe("runAssessment", () => {
       status: "failed",
       error: "Something went wrong while assessing this recording, try again.",
     });
+    log.mockRestore();
+  });
+
+  it("marks the assessment failed when only the coach insights fail", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    deepgramReplies(success());
+    claudeRepliesInTurn(scoringSchema.parse(judgementFixture()),new InternalServerError(500, { type: "error" }, "overloaded", new Headers()));
+
+    await runAssessment(recordingId, claim, keys);
+
+    expect(await assessment()).toMatchObject({ status: "failed", totalScore: null });
     log.mockRestore();
   });
 
@@ -333,7 +346,7 @@ describe("runAssessment", () => {
       await runAssessment(recordingId, claim, keys);
 
       expect((await assessment()).status).toBe("done");
-      expect(stream).toHaveBeenCalledTimes(2);
+      expect(stream).toHaveBeenCalledTimes(3);
       expect(Anthropic).toHaveBeenLastCalledWith(expect.objectContaining({ apiKey: "sk-secret-key" }));
       const [request] = insightRequests();
       expect(request.model).toBe("claude-opus-5-5");
@@ -372,7 +385,7 @@ describe("runAssessment", () => {
 
       await runAssessment(recordingId, claim, keys);
 
-      expect(stream).toHaveBeenCalledTimes(1);
+      expect(stream).toHaveBeenCalledTimes(2);
       expect(insightRequests()).toEqual([]);
       expect(await insight()).toBeUndefined();
     });

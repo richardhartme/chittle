@@ -191,7 +191,7 @@ describe("assessRecording", () => {
 
     expect(after).toHaveBeenCalledTimes(1);
     expect(fetch).not.toHaveBeenCalled();
-    expect(stream).toHaveBeenCalledTimes(1);
+    expect(stream).toHaveBeenCalledTimes(2);
     const row = await assessmentOf(recording.id);
     expect(row).toMatchObject({ status: "done", error: null, scoringVersion: 3, structureScore: 200 });
     expect(row.pronunciationScore).toBe(150); // every word heard clearly, no longer the old 1
