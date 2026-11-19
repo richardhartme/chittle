@@ -6,6 +6,10 @@ import { seedCategories } from "./seed-data";
 
 const migrations = fileURLToPath(new URL("../../drizzle/", import.meta.url));
 
+// Booted at module load, like src/test/db.ts, so PGlite's start-up (seconds on a busy CI runner) isn't
+// counted against the test's timeout.
+const client = await PGlite.create();
+
 const applied = new WeakMap<PGlite, number>();
 
 /** Applies the next migrations in order, up to and including `lastTag`, as drizzle's migrator would. */
@@ -35,7 +39,6 @@ describe("category frameworks", () => {
   });
 
   it("are backfilled by the migration for categories that already exist", async () => {
-    const client = new PGlite();
     await migrateTo(client, "0004_assessments");
     for (const slug of [...seedCategories.map((c) => c.slug), "made-up"]) {
       await client.query("insert into categories (slug, name) values ($1, $1)", [slug]);
