@@ -19,6 +19,7 @@ describe("SiteNav", () => {
     vi.mocked(getCurrentUser).mockResolvedValue({ id: "u", email: "a@example.com", createdAt: new Date() });
     render(await SiteNav());
 
+    expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute("href", "/");
     expect(screen.getByRole("link", { name: "Practise" })).toHaveAttribute("href", "/practice");
     expect(screen.getByRole("link", { name: "Library" })).toHaveAttribute("href", "/library");
     expect(screen.getByRole("link", { name: "Account" })).toHaveAttribute("href", "/account");

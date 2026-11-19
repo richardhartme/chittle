@@ -8,6 +8,7 @@ export async function SiteNav() {
 
   return (
     <nav>
+      <Link href="/">Home</Link>
       <Link href="/practice">Practise</Link>
       <Link href="/library">Library</Link>
       <Link href="/account">Account</Link>

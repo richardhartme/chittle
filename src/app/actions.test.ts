@@ -103,10 +103,10 @@ describe("verifyLoginLink", () => {
     return new URL(link).searchParams.get("token")!;
   }
 
-  it("signs the user in and redirects to /practice", async () => {
+  it("signs the user in and redirects to the dashboard", async () => {
     const token = await issueToken();
 
-    expect(await redirectedTo(() => verifyLoginLink(form({ token })))).toBe("/practice");
+    expect(await redirectedTo(() => verifyLoginLink(form({ token })))).toBe("/");
 
     const [user] = await db.select().from(users);
     expect(user.email).toBe("a@example.com");

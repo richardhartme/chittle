@@ -33,7 +33,7 @@ export async function verifyLoginLink(formData: FormData) {
   if (!user) redirect("/login?error=invalid");
 
   await createSession(user.id);
-  redirect("/practice");
+  redirect("/");
 }
 
 export async function logout() {
