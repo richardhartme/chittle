@@ -15,6 +15,7 @@ import {
   type AssessmentState,
 } from "@/lib/assessment/status";
 import { requireUser } from "@/lib/auth/session";
+import { focusVotesOn } from "@/lib/focus-votes";
 import { hasProviderKeys } from "@/lib/provider-keys";
 import { formatDate, formatDuration } from "@/lib/format";
 import { practiceAgainHref, recordingMode } from "@/lib/practice";
@@ -109,7 +110,11 @@ async function AssessmentPanel({ recording, assessment }: { recording: Recording
       .leftJoin(transcripts, eq(transcripts.recordingId, assessments.recordingId))
       .where(eq(assessments.recordingId, recordingId));
     const judged = row?.result?.judged;
-    const [canReassess, previous] = await Promise.all([hasProviderKeys(userId), previousAttempt(recording)]);
+    const [canReassess, previous, focusVotes] = await Promise.all([
+      hasProviderKeys(userId),
+      previousAttempt(recording),
+      focusVotesOn(userId, recordingId),
+    ]);
     // Only a scored assessment is compared, so the cards' changes always sit beside the total's.
     const compared = judged && row.total !== null ? previous : null;
     return (
@@ -131,7 +136,13 @@ async function AssessmentPanel({ recording, assessment }: { recording: Recording
           />
         )}
         {judged && (
-          <OverallResult overview={judged.overview} strengths={judged.strengths} areasToImprove={judged.areasToImprove} />
+          <OverallResult
+            recordingId={recordingId}
+            overview={judged.overview}
+            strengths={judged.strengths}
+            areasToImprove={judged.areasToImprove}
+            focusVotes={focusVotes}
+          />
         )}
         <CoachInsightsDrawer insights={judged?.coachInsights} />
         <section className="card stack">

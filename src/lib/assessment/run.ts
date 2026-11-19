@@ -1,6 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { assessments, categories, recordings, topics, transcripts } from "@/db/schema";
+import { recentFocusVotes } from "@/lib/focus-votes";
 import { transcribe } from "./deepgram";
 import { AssessmentError } from "./errors";
 import { judge } from "./judge";
@@ -44,7 +45,15 @@ export async function runAssessment(recordingId: string, claimedAt: Date, keys: 
     const { words, audioSeconds: durationSeconds } = transcript;
     const measured = measure(words, durationSeconds);
     const judgement = await judge(
-      { topic: row.topic, category: row.category, framework: row.framework, transcript: transcript.text, durationSeconds, measured },
+      {
+        topic: row.topic,
+        category: row.category,
+        framework: row.framework,
+        transcript: transcript.text,
+        durationSeconds,
+        measured,
+        focusVotes: await recentFocusVotes(recording.userId),
+      },
       keys.anthropic,
     );
     const { scores, total, judged } = scoreJudgement({ judgement, measured, words, durationSeconds });

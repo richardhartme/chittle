@@ -1,6 +1,8 @@
 import Anthropic, { AuthenticationError } from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { MessageCreateParamsNonStreaming } from "@anthropic-ai/sdk/resources/beta/messages/messages";
+import type { FocusVote } from "@/db/schema";
+import type { CastFocusVote } from "@/lib/focus-votes";
 import { formatDuration } from "@/lib/format";
 import { FRAMEWORKS, type FrameworkId } from "@/lib/frameworks";
 import { DIMENSIONS } from "./dimensions";
@@ -30,6 +32,8 @@ export type JudgeInput = {
   transcript: string;
   durationSeconds: number;
   measured: Measurement;
+  /** The speaker's recent focus votes on earlier areas to improve, newest first. */
+  focusVotes: CastFocusVote[];
 };
 
 const format = betaZodOutputFormat(judgementSchema);
@@ -64,6 +68,11 @@ Feedback:
 - Strengths and areas to improve are short phrases, not sentences.
 - List hedges, discourse fillers and redundant phrases only as they appear in the transcript, and count only the times they were used that way.
 
+Focus votes: the speaker may have voted on areas to improve from their earlier assessments, listed under "Areas I want to work on" and "Feedback I didn't find useful".
+- Areas I want to work on: keep checking them. Say whether this answer improved on them, and list them again in areas to improve if it didn't.
+- Feedback I didn't find useful: don't repeat it, or anything like it.
+- Votes are context, not scores. Never raise or lower a score because of them.
+
 Coach insights rework the speaker's own answer, so they can see a better version of it:
 - How you said it: the answer's main points in the order they were made. Better order: the same points in the order that would land best, with a paragraph on why.
 - Try opening with: one strong first sentence, built from what the speaker went on to say.
@@ -84,6 +93,15 @@ function metrics(measured: Measurement): string {
   ].join("\n");
 }
 
+function focusVotesSection(votes: CastFocusVote[]): string {
+  const group = (heading: string, vote: FocusVote) => {
+    const areas = votes.filter((v) => v.vote === vote).map((v) => `- ${v.area}`);
+    return areas.length ? [heading, ...areas] : [];
+  };
+  const lines = [...group("Areas I want to work on:", "up"), ...group("Feedback I didn't find useful:", "down")];
+  return lines.length ? `<focus_votes>\n${lines.join("\n")}\n</focus_votes>\n` : "";
+}
+
 function userMessage(input: JudgeInput): string {
   const framework = FRAMEWORKS[input.framework];
   const steps = framework.steps.map((step, i) => `${i + 1}. ${step.label}: ${step.description}`).join("\n");
@@ -96,7 +114,7 @@ ${steps}
 <measured>
 ${metrics(input.measured)}
 </measured>
-<transcript>
+${focusVotesSection(input.focusVotes)}<transcript>
 ${input.transcript}
 </transcript>
 Write the ideal version in ${framework.name}, with one entry for each step, in this order: ${framework.steps.map((step) => step.label).join(", ")}.`;
