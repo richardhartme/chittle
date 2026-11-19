@@ -20,6 +20,7 @@ import { hasProviderKeys } from "@/lib/provider-keys";
 import { formatDate, formatDuration } from "@/lib/format";
 import { practiceAgainHref, recordingMode } from "@/lib/practice";
 import { AssessmentPoller } from "./assessment-poller";
+import { AudioPlayer } from "./audio-player";
 import { CoachInsightsCard } from "./coach-insights";
 import { DeleteForm } from "./delete-form";
 import { DimensionCards } from "./dimension-cards";
@@ -64,7 +65,7 @@ async function Recording({ params }: Pick<PageProps<"/library/[id]">, "params">)
       </p>
 
       {mode === "audio" ? (
-        <audio controls preload="metadata" src={src} />
+        <AudioPlayer src={src} durationSeconds={recording.durationSeconds} />
       ) : (
         <video controls preload="metadata" src={src} />
       )}

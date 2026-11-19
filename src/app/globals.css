@@ -487,8 +487,102 @@ video {
   transition: width 0.1s linear;
 }
 
-audio {
-  width: 100%;
+/* The audio recording's player: the app's own controls round a hidden <audio>. */
+.audio-player {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1.25rem;
+}
+
+.audio-play {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+}
+
+.audio-mute {
+  flex: none;
+  display: grid;
+  place-items: center;
+  padding: 0.4rem;
+  border-color: transparent;
+  background: none;
+}
+
+.audio-time {
+  flex: none;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.audio-seek {
+  flex: 1;
+  min-width: 0;
+}
+
+.audio-volume {
+  flex: none;
+  width: 5.5rem;
+}
+
+/* A thin track filled with the accent up to --fill, and a round thumb. */
+.audio-range {
+  appearance: none;
+  height: 1.25rem;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.audio-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--accent) var(--fill, 0%), var(--border) var(--fill, 0%));
+}
+
+.audio-range::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--accent) var(--fill, 0%), var(--border) var(--fill, 0%));
+}
+
+.audio-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -4px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.audio-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.audio-range:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.audio-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px var(--lavender-soft), 0 0 0 4.5px var(--lavender);
+}
+
+.audio-range:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 3px var(--lavender-soft), 0 0 0 4.5px var(--lavender);
 }
 
 /* Library */
@@ -1388,6 +1482,11 @@ html:has(dialog.drawer[open]) {
 }
 
 @media (max-width: 640px) {
+  /* Phones set volume with their own buttons. */
+  .audio-volume {
+    display: none;
+  }
+
   .dimension-cards {
     grid-template-columns: repeat(2, 1fr);
   }

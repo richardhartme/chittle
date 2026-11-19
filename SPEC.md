@@ -94,7 +94,7 @@ Structure is judged against the category's framework. Uptalk isn't scored (it ne
 - **Ideal version**: the user's answer rewritten in the category's framework, one section per framework step.
 
 ### Results page (`/library/[id]`)
-- Player, coach insights card, score composition bar (each dimension's share of 1000), six dimension cards, overview, strengths, areas to improve, and the transcript as plain text.
+- Player (video uses the browser's controls; audio has the app's own: play/pause, a seek bar with the time, mute and volume, which phones leave to their own buttons), coach insights card, score composition bar (each dimension's share of 1000), six dimension cards, overview, strengths, areas to improve, and the transcript as plain text.
 - Clicking a dimension card opens a drawer (native `<dialog>`) with its sub-scores, "View feedback" toggles, statistics and charts. A "Coach insights" card above the score shows the summary (or, for assessments from before it, the suggested opening) and opens a drawer with the coach insights and the ideal version.
 - **Practise again** opens setup with the same topic, speaking time and mode filled in. When the speaker has an earlier assessed recording of the topic, the results show its score and the change beside the total (linking to it), and each dimension card shows its change. A Home button sits beside it.
 - Re-assess, Retry or Assess as described above, and Delete.
@@ -201,7 +201,7 @@ The local-disk implementation writes under a configurable directory outside the 
 - Deleting a recording or account deletes the associated files from disk.
 
 ## Known limitations
-- MediaRecorder WebM (video or audio) from Chrome/Firefox has no duration header, so the player can't show a total duration or seek until recordings are transcoded/remuxed (already planned).
+- MediaRecorder WebM (video or audio) from Chrome/Firefox has no duration header, so the video player can't show a total duration, and neither player can seek reliably, until recordings are transcoded/remuxed (already planned). The audio player shows the stored duration in the meantime.
 - Magic-link requests aren't rate limited yet.
 - Topic generation happens inline in the request that needs it, so the first user to exhaust a category waits on the LLM call.
 - An assessment interrupted by a restart isn't resumed; it shows as failed after about 5 minutes and must be retried.
