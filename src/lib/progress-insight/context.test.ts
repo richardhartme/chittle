@@ -1,11 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { focusVotes } from "@/db/schema";
-import { createCategory, createTopic, createUser, db, resetDb } from "@/test/db";
-import { createAssessedRecording } from "@/test/progress-insight";
+import { createAssessedRecording, createCategory, createTopic, createUser, db, resetDb } from "@/test/db";
 
 vi.mock("@/db", async () => ({ db: (await import("@/test/db")).db }));
 
-import { insightContext } from "./context";
+import { progressInsightContext } from "./context";
 
 let userId: string;
 let interviewTopic: string;
@@ -20,7 +19,7 @@ beforeEach(async () => {
 
 const day = (d: number) => new Date(Date.UTC(2026, 10, d, 9));
 
-describe("insightContext", () => {
+describe("progressInsightContext", () => {
   it("gives the speaker's last 10 assessments by date, oldest first, with their category, framework and scores", async () => {
     // 12 assessments on 1–12 November, created out of order: the first two are too old to send.
     for (const d of [5, 1, 12, 3, 7, 2, 9, 11, 4, 6, 10, 8]) {
@@ -30,7 +29,7 @@ describe("insightContext", () => {
       });
     }
 
-    const { assessments } = await insightContext(userId);
+    const { assessments } = await progressInsightContext(userId);
 
     expect(assessments.map((a) => a.date)).toEqual([3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(day));
     expect(assessments.map((a) => a.total)).toEqual([503, 504, 505, 506, 507, 508, 509, 510, 511, 512]);
@@ -51,7 +50,7 @@ describe("insightContext", () => {
       areasToImprove: ["Open with your point", "Cut the hedges", "Slow down", "Land the ending"],
     });
 
-    const { assessments } = await insightContext(userId);
+    const { assessments } = await progressInsightContext(userId);
 
     expect(assessments[0].areasToImprove).toEqual(["Open with your point", "Cut the hedges", "Slow down"]);
   });
@@ -63,7 +62,7 @@ describe("insightContext", () => {
     await createAssessedRecording(userId, interviewTopic, { totalScore: null }); // scoring version 1
     await createAssessedRecording((await createUser()).id, interviewTopic, { totalScore: 900 });
 
-    const { assessments } = await insightContext(userId);
+    const { assessments } = await progressInsightContext(userId);
 
     expect(assessments.map((a) => a.total)).toEqual([640]);
   });
@@ -82,7 +81,7 @@ describe("insightContext", () => {
       vote: "up",
     });
 
-    const { focusVotes: votes } = await insightContext(userId);
+    const { focusVotes: votes } = await progressInsightContext(userId);
 
     expect(votes).toEqual([
       { area: "Slow down", vote: "down" },

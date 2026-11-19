@@ -3,7 +3,11 @@ import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import * as schema from "@/db/schema";
+import type { DimensionKey } from "@/lib/assessment/dimensions";
+import type { AssessmentResult } from "@/lib/assessment/result";
+import { SCORING_VERSION } from "@/lib/assessment/version";
 import type { FrameworkId } from "@/lib/frameworks";
+import { judgementFixture } from "./judgement";
 
 /**
  * An in-process Postgres (PGlite) with the real migrations applied, so tests exercise the same SQL,
@@ -59,5 +63,66 @@ export async function createRecording(
       ...overrides,
     })
     .returning();
+  return recording;
+}
+
+/** The dimension scores `createAssessedRecording` gives by default, totalling 650. */
+export const ASSESSED_SCORES: Record<DimensionKey, number> = {
+  structure: 200,
+  conciseness: 120,
+  confidence: 80,
+  pronunciation: 100,
+  fillerRate: 90,
+  pace: 60,
+};
+
+/**
+ * A recording with an assessment. By default it's done under the current scoring version, with
+ * `ASSESSED_SCORES`, a total of their sum, and a judgement listing `areasToImprove`. A null
+ * `totalScore` gives a done assessment from before judging (scoring version 1: the measured scores,
+ * no total). A pending or failed one has no scores.
+ */
+export async function createAssessedRecording(
+  userId: string,
+  topicId: string,
+  {
+    createdAt,
+    status = "done",
+    scores = ASSESSED_SCORES,
+    totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0),
+    areasToImprove = ["Open with your point", "Cut the hedges"],
+  }: {
+    createdAt?: Date;
+    status?: schema.AssessmentStatus;
+    scores?: Record<DimensionKey, number>;
+    totalScore?: number | null;
+    areasToImprove?: string[];
+  } = {},
+) {
+  const recording = await createRecording(userId, topicId, createdAt ? { createdAt } : {});
+  const at = createdAt ?? new Date();
+  const done = status === "done";
+  const judged = done && totalScore !== null;
+  await db.insert(schema.assessments).values({
+    recordingId: recording.id,
+    status,
+    startedAt: at,
+    ...(status === "failed" && { error: "The assessment failed." }),
+    ...(done && {
+      completedAt: at,
+      scoringVersion: 1,
+      pronunciationScore: scores.pronunciation,
+      fillerRateScore: scores.fillerRate,
+      paceScore: scores.pace,
+    }),
+    ...(judged && {
+      scoringVersion: SCORING_VERSION,
+      totalScore,
+      structureScore: scores.structure,
+      concisenessScore: scores.conciseness,
+      confidenceScore: scores.confidence,
+      result: { judged: { ...judgementFixture(), areasToImprove } } as unknown as AssessmentResult,
+    }),
+  });
   return recording;
 }

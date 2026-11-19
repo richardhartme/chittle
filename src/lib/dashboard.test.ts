@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { assessments, type Recording } from "@/db/schema";
-import { createCategory, createRecording, createTopic, createUser, db, resetDb } from "@/test/db";
+import type { DimensionKey } from "@/lib/assessment/dimensions";
+import { createAssessedRecording, createCategory, createRecording, createTopic, createUser, resetDb } from "@/test/db";
 
 vi.mock("@/db", async () => ({ db: (await import("@/test/db")).db }));
 
@@ -51,37 +51,15 @@ beforeEach(resetDb);
 
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000);
 
-type Scores = { structure: number; conciseness: number; confidence: number; pronunciation: number; fillerRate: number; pace: number };
-
-const SCORES: Scores = { structure: 150, conciseness: 120, confidence: 110, pronunciation: 120, fillerRate: 90, pace: 65 };
-
-/** Gives a recording a done assessment with these dimension scores, totalling their sum. */
-async function assess(recording: Recording, scores: Scores = SCORES) {
-  await db.insert(assessments).values({
-    recordingId: recording.id,
-    status: "done",
-    startedAt: recording.createdAt,
-    completedAt: recording.createdAt,
-    scoringVersion: 3,
-    totalScore: Object.values(scores).reduce((sum, score) => sum + score, 0),
-    structureScore: scores.structure,
-    concisenessScore: scores.conciseness,
-    confidenceScore: scores.confidence,
-    pronunciationScore: scores.pronunciation,
-    fillerRateScore: scores.fillerRate,
-    paceScore: scores.pace,
-  });
-}
+/** Dimension scores totalling 655. */
+const SCORES: Record<DimensionKey, number> = { structure: 150, conciseness: 120, confidence: 110, pronunciation: 120, fillerRate: 90, pace: 65 };
 
 async function setup() {
   const user = await createUser();
   const topic = await createTopic((await createCategory()).id);
-  /** A recording made `minutes` ago, assessed with these scores. */
-  const practice = async (minutes: number, scores: Scores = SCORES) => {
-    const recording = await createRecording(user.id, topic.id, { createdAt: minutesAgo(minutes) });
-    await assess(recording, scores);
-    return recording;
-  };
+  /** A recording made `minutes` ago, assessed with these scores and a total of their sum. */
+  const practice = (minutes: number, scores = SCORES) =>
+    createAssessedRecording(user.id, topic.id, { createdAt: minutesAgo(minutes), scores });
   return { user, topic, practice };
 }
 
@@ -123,6 +101,18 @@ describe("scoreHistory", () => {
     expect((await scoreHistory(user.id, { dimension: "all", range: "all" })).columns).toHaveLength(35);
   });
 
+  it("orders recordings made at the same moment by id, so the range always picks the same ones", async () => {
+    const { user, topic } = await setup();
+    const sameMoment = minutesAgo(5);
+    const made = [];
+    for (let i = 0; i < 12; i++) made.push((await createAssessedRecording(user.id, topic.id, { createdAt: sameMoment })).id);
+    const byId = [...made].sort();
+
+    const { columns } = await scoreHistory(user.id, { dimension: "all", range: "7" });
+
+    expect(columns.map((column) => column.recordingId)).toEqual(byId.slice(-7));
+  });
+
   it("averages only the recordings in range", async () => {
     const { user, practice } = await setup();
     await practice(100, { ...SCORES, structure: 0 }); // 505, outside the last 7
@@ -136,23 +126,9 @@ describe("scoreHistory", () => {
     const { user, topic, practice } = await setup();
     const assessed = await practice(50);
     await createRecording(user.id, topic.id, { createdAt: minutesAgo(40) });
-    const pending = await createRecording(user.id, topic.id, { createdAt: minutesAgo(30) });
-    const failed = await createRecording(user.id, topic.id, { createdAt: minutesAgo(20) });
-    const measuredOnly = await createRecording(user.id, topic.id, { createdAt: minutesAgo(10) });
-    await db.insert(assessments).values([
-      { recordingId: pending.id, status: "pending", startedAt: minutesAgo(30) },
-      { recordingId: failed.id, status: "failed", startedAt: minutesAgo(20), error: "Deepgram said no." },
-      {
-        recordingId: measuredOnly.id,
-        status: "done",
-        startedAt: minutesAgo(10),
-        completedAt: minutesAgo(10),
-        scoringVersion: 1,
-        pronunciationScore: 120,
-        fillerRateScore: 90,
-        paceScore: 65,
-      },
-    ]);
+    await createAssessedRecording(user.id, topic.id, { createdAt: minutesAgo(30), status: "pending" });
+    await createAssessedRecording(user.id, topic.id, { createdAt: minutesAgo(20), status: "failed" });
+    await createAssessedRecording(user.id, topic.id, { createdAt: minutesAgo(10), totalScore: null }); // scoring version 1
 
     const history = await scoreHistory(user.id, { dimension: "all", range: "7" });
 
@@ -164,7 +140,7 @@ describe("scoreHistory", () => {
     const { user, topic, practice } = await setup();
     await practice(10);
     const someoneElse = await createUser();
-    await assess(await createRecording(someoneElse.id, topic.id, { createdAt: minutesAgo(5) }), { ...SCORES, pace: 0 });
+    await createAssessedRecording(someoneElse.id, topic.id, { createdAt: minutesAgo(5), scores: { ...SCORES, pace: 0 } });
 
     const history = await scoreHistory(user.id, { dimension: "all", range: "all" });
 

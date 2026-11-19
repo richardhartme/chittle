@@ -1,9 +1,10 @@
-import { and, count, eq, isNotNull, sql } from "drizzle-orm";
+import { count, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { assessments, progressInsights, recordings } from "@/db/schema";
-import { forTheLogs } from "@/lib/assessment/errors";
-import { insightContext } from "./context";
-import { generateInsight } from "./generate";
+import { scoredAssessmentOf } from "@/lib/assessment/status";
+import { redactForLogs } from "@/lib/logging";
+import { progressInsightContext } from "./context";
+import { generateProgressInsight } from "./generate";
 
 /** How many scored assessments a speaker needs before there's any progress to see. */
 export const MIN_ASSESSMENTS = 2;
@@ -14,15 +15,15 @@ export const MIN_ASSESSMENTS = 2;
  */
 export async function refreshProgressInsight(userId: string, anthropicKey: string): Promise<void> {
   try {
-    const context = await insightContext(userId);
+    const context = await progressInsightContext(userId);
     if (context.assessments.length < MIN_ASSESSMENTS) return;
-    const text = await generateInsight(context, anthropicKey);
+    const text = await generateProgressInsight(context, anthropicKey);
     await db
       .insert(progressInsights)
       .values({ userId, text, generatedAt: sql`now()` })
       .onConflictDoUpdate({ target: progressInsights.userId, set: { text, generatedAt: sql`now()` } });
   } catch (err) {
-    console.error(`Progress insight for user ${userId} failed:`, forTheLogs(err, [anthropicKey]));
+    console.error(`Progress insight for user ${userId} failed:`, redactForLogs(err, [anthropicKey]));
   }
 }
 
@@ -39,7 +40,7 @@ export async function progressInsightState(userId: string): Promise<ProgressInsi
       .select({ assessed: count() })
       .from(recordings)
       .innerJoin(assessments, eq(assessments.recordingId, recordings.id))
-      .where(and(eq(recordings.userId, userId), eq(assessments.status, "done"), isNotNull(assessments.totalScore))),
+      .where(scoredAssessmentOf(userId)),
     db
       .select({ text: progressInsights.text, generatedAt: progressInsights.generatedAt })
       .from(progressInsights)

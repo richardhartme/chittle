@@ -1,21 +1,21 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { MessageCreateParamsNonStreaming } from "@anthropic-ai/sdk/resources/beta/messages/messages";
 import { z } from "zod";
 import { DIMENSION_KEYS, DIMENSIONS, MAX_TOTAL } from "@/lib/assessment/dimensions";
-import { focusVotesSection, JUDGE_MODEL } from "@/lib/assessment/judge";
+import { askClaude, FALLBACK_BETA, replyText } from "@/lib/claude";
+import { focusVotesSection } from "@/lib/focus-votes/prompt";
 import { FRAMEWORKS } from "@/lib/frameworks";
-import type { InsightAssessment, InsightContext } from "./context";
+import type { ProgressInsightAssessment, ProgressInsightContext } from "./context";
 
+/** The model that writes the progress insight. Not tied to the scoring version, since nothing is scored. */
+export const PROGRESS_INSIGHT_MODEL = "claude-opus-5-5";
 /** A short reply, but with room for adaptive thinking before it. */
 const MAX_TOKENS = 16_000;
 /** The assessment is already stored by now, so this only bounds how long the background work runs. */
 const TIMEOUT_MS = 2 * 60 * 1000;
-/** Lets the API re-run a declined request on a fallback model it picks by the refusal's category. */
-const FALLBACK_BETA = "server-side-fallback-2026-07-01";
 
-const insightSchema = z.object({ insight: z.string() });
-const format = betaZodOutputFormat(insightSchema);
+const progressInsightSchema = z.object({ insight: z.string() });
+const format = betaZodOutputFormat(progressInsightSchema);
 
 const SYSTEM_PROMPT = `You are a speaking coach looking across a speaker's recent practice assessments. Each assessment scored one recorded answer out of ${MAX_TOTAL}, across six dimensions, and listed the areas to improve. You also get the speaker's focus votes on those areas: what they want to work on, and feedback they didn't find useful.
 
@@ -32,7 +32,7 @@ Guidance:
 
 const date = (d: Date) => d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
-function assessmentLine(a: InsightAssessment, index: number): string {
+function assessmentLine(a: ProgressInsightAssessment, index: number): string {
   const scores = DIMENSION_KEYS.map((key) => `${DIMENSIONS[key].name} ${a.scores[key] ?? "–"}/${DIMENSIONS[key].max}`);
   const lines = [
     `${index + 1}. ${date(a.date)} · ${a.category} (${FRAMEWORKS[a.framework].name}) · ${a.total}/${MAX_TOTAL}`,
@@ -42,7 +42,7 @@ function assessmentLine(a: InsightAssessment, index: number): string {
   return lines.join("\n");
 }
 
-function userMessage({ assessments, focusVotes }: InsightContext): string {
+function userMessage({ assessments, focusVotes }: ProgressInsightContext): string {
   return `<assessments>
 Oldest first.
 ${assessments.map(assessmentLine).join("\n")}
@@ -51,9 +51,9 @@ ${focusVotesSection(focusVotes)}Write the observation.`;
 }
 
 /** The request asking Claude for the speaker's progress insight. */
-export function buildInsightRequest(context: InsightContext) {
+export function buildProgressInsightRequest(context: ProgressInsightContext) {
   return {
-    model: JUDGE_MODEL,
+    model: PROGRESS_INSIGHT_MODEL,
     max_tokens: MAX_TOKENS,
     betas: [FALLBACK_BETA],
     fallbacks: "default",
@@ -66,12 +66,9 @@ export function buildInsightRequest(context: InsightContext) {
 }
 
 /** Asks Claude, with the speaker's key, for their progress insight. Throws on any failure. */
-export async function generateInsight(context: InsightContext, anthropicKey: string): Promise<string> {
-  const client = new Anthropic({ apiKey: anthropicKey, timeout: TIMEOUT_MS });
-  const message = await client.beta.messages.stream(buildInsightRequest(context)).finalMessage();
-  if (message.stop_reason !== "end_turn") throw new Error(`Claude stopped early: ${message.stop_reason}`);
-  const text = message.content.flatMap((block) => (block.type === "text" ? [block.text] : [])).join("");
-  const insight = format.parse(text).insight.trim();
+export async function generateProgressInsight(context: ProgressInsightContext, anthropicKey: string): Promise<string> {
+  const message = await askClaude(buildProgressInsightRequest(context), anthropicKey, TIMEOUT_MS);
+  const insight = format.parse(replyText(message)).insight.trim();
   if (!insight) throw new Error("Claude's insight was empty.");
   return insight;
 }

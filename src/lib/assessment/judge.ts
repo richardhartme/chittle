@@ -1,8 +1,9 @@
-import Anthropic, { AuthenticationError } from "@anthropic-ai/sdk";
+import { AuthenticationError } from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { MessageCreateParamsNonStreaming } from "@anthropic-ai/sdk/resources/beta/messages/messages";
-import type { FocusVote } from "@/db/schema";
+import { askClaude, FALLBACK_BETA, replyText } from "@/lib/claude";
 import type { CastFocusVote } from "@/lib/focus-votes";
+import { focusVotesSection } from "@/lib/focus-votes/prompt";
 import { formatDuration } from "@/lib/format";
 import { FRAMEWORKS, type FrameworkId } from "@/lib/frameworks";
 import { DIMENSIONS } from "./dimensions";
@@ -16,8 +17,6 @@ export const JUDGE_MODEL = "claude-opus-5-5";
 export const JUDGE_EFFORT = "high";
 /** Large enough that a long answer's feedback is never cut off, so the request streams. */
 const MAX_TOKENS = 64_000;
-/** Lets the API re-run a declined request on a fallback model it picks by the refusal's category. */
-const FALLBACK_BETA = "server-side-fallback-2026-07-01";
 /**
  * Shorter than the 5 minutes after which a pending assessment counts as stale, so a slow request is
  * recorded as failed rather than outliving its claim. With no automatic retries for the same reason:
@@ -93,16 +92,6 @@ function metrics(measured: Measurement): string {
   ].join("\n");
 }
 
-/** The speaker's focus votes as a prompt section, grouped by which way they voted. Empty when there are none. */
-export function focusVotesSection(votes: CastFocusVote[]): string {
-  const group = (heading: string, vote: FocusVote) => {
-    const areas = votes.filter((v) => v.vote === vote).map((v) => `- ${v.area}`);
-    return areas.length ? [heading, ...areas] : [];
-  };
-  const lines = [...group("Areas I want to work on:", "up"), ...group("Feedback I didn't find useful:", "down")];
-  return lines.length ? `<focus_votes>\n${lines.join("\n")}\n</focus_votes>\n` : "";
-}
-
 function userMessage(input: JudgeInput): string {
   const framework = FRAMEWORKS[input.framework];
   const steps = framework.steps.map((step, i) => `${i + 1}. ${step.label}: ${step.description}`).join("\n");
@@ -145,17 +134,14 @@ export function buildJudgeRequest(input: JudgeInput) {
  * throws an `AssessmentError`; anything else throws as it is, for the caller's generic message.
  */
 export async function judge(input: JudgeInput, anthropicKey: string): Promise<Judgement> {
-  const client = new Anthropic({ apiKey: anthropicKey, timeout: TIMEOUT_MS, maxRetries: 0 });
   let message;
   try {
-    message = await client.beta.messages.stream(buildJudgeRequest(input)).finalMessage();
+    message = await askClaude(buildJudgeRequest(input), anthropicKey, TIMEOUT_MS);
   } catch (err) {
     if (err instanceof AuthenticationError) throw new AssessmentError("Anthropic rejected the key.");
     throw err;
   }
   // With fallbacks, a refusal here means every model in the chain declined.
   if (message.stop_reason === "refusal") throw new AssessmentError("The assessment was declined.");
-  if (message.stop_reason !== "end_turn") throw new Error(`Claude stopped early: ${message.stop_reason}`);
-  const text = message.content.flatMap((block) => (block.type === "text" ? [block.text] : [])).join("");
-  return format.parse(text);
+  return format.parse(replyText(message));
 }

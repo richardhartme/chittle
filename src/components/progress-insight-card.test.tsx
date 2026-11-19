@@ -2,8 +2,7 @@
 import { render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { progressInsights } from "@/db/schema";
-import { createCategory, createTopic, createUser, db, resetDb } from "@/test/db";
-import { createAssessedRecording } from "@/test/progress-insight";
+import { createAssessedRecording, createCategory, createTopic, createUser, db, resetDb } from "@/test/db";
 
 vi.mock("@/db", async () => ({ db: (await import("@/test/db")).db }));
 vi.mock("next/server", async () => (await import("@/test/next")).serverMock);

@@ -2,9 +2,10 @@ import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { assessments, categories, recordings, topics, transcripts } from "@/db/schema";
 import { recentFocusVotes } from "@/lib/focus-votes";
+import { redactForLogs } from "@/lib/logging";
 import { refreshProgressInsight } from "@/lib/progress-insight";
 import { transcribe } from "./deepgram";
-import { AssessmentError, forTheLogs } from "./errors";
+import { AssessmentError } from "./errors";
 import { judge } from "./judge";
 import { measure } from "./measure";
 import type { AssessmentResult } from "./result";
@@ -77,13 +78,13 @@ export async function runAssessment(recordingId: string, claimedAt: Date, keys: 
     if (stored) assessedFor = recording.userId;
   } catch (err) {
     if (!(err instanceof AssessmentError)) {
-      console.error(`Assessment of recording ${recordingId} failed:`, forTheLogs(err, Object.values(keys)));
+      console.error(`Assessment of recording ${recordingId} failed:`, redactForLogs(err, Object.values(keys)));
     }
     await finish(recordingId, claimedAt, {
       status: "failed",
       error: err instanceof AssessmentError ? err.message : UNEXPECTED,
     }).catch((finishErr) =>
-      console.error("Couldn't record the failed assessment:", forTheLogs(finishErr, Object.values(keys))),
+      console.error("Couldn't record the failed assessment:", redactForLogs(finishErr, Object.values(keys))),
     );
   }
   // Outside the try, so that nothing here can mark the stored assessment failed.

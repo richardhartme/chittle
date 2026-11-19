@@ -1,5 +1,5 @@
-import { sql } from "drizzle-orm";
-import { assessments, type AssessmentStatus } from "@/db/schema";
+import { and, eq, isNotNull, sql } from "drizzle-orm";
+import { assessments, type AssessmentStatus, recordings } from "@/db/schema";
 
 /** How long an assessment may stay pending before it's treated as failed and can be claimed again. */
 export const STALE_AFTER_MINUTES = 5;
@@ -16,6 +16,13 @@ export const STALE_ERROR = "The assessment stopped before it finished.";
  */
 export const isStale = sql<boolean>`(${assessments.status} = 'pending'
   and ${assessments.startedAt} < now() - make_interval(mins => ${STALE_AFTER_MINUTES}))`;
+
+/**
+ * Matches the speaker's scored assessments: done and with a total, so not failed, pending or measured
+ * before judging. For a query joining `recordings` to `assessments`.
+ */
+export const scoredAssessmentOf = (userId: string) =>
+  and(eq(recordings.userId, userId), eq(assessments.status, "done"), isNotNull(assessments.totalScore));
 
 /** Columns to select (alongside a left join on `assessments`) to build an `AssessmentState`. */
 export const assessmentStateColumns = {
