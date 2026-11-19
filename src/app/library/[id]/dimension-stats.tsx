@@ -2,6 +2,7 @@ import type { DimensionKey } from "@/lib/assessment/dimensions";
 import { SENTENCE_LENGTH_BANDS, type Measurement } from "@/lib/assessment/measure";
 import type { JudgedResult } from "@/lib/assessment/score";
 import { formatDuration } from "@/lib/format";
+import { PaceCharts } from "./pace-charts";
 import { Bar } from "./score-parts";
 
 const oneDecimal = (n: number) => (Math.round(n * 10) / 10).toString();
@@ -91,16 +92,18 @@ export function DimensionStats({
     );
   }
   if (dimension === "pace") {
-    // The banded scales and charts come with the pace charts.
     const { average, standardDeviation, range } = measured.pace.overTime;
     return (
-      <Statistics>
-        <dl className="stats">
-          <Stat label="Average WPM" value={whole(average)} />
-          <Stat label="Standard deviation" value={`±${whole(standardDeviation)} WPM`} />
-          <Stat label="Range" value={`${whole(range[0])}–${whole(range[1])} WPM`} />
-        </dl>
-      </Statistics>
+      <>
+        <Statistics>
+          <dl className="stats">
+            <Stat label="Average WPM" value={whole(average)} />
+            <Stat label="Standard deviation" value={`±${whole(standardDeviation)} WPM`} />
+            <Stat label="Range" value={`${whole(range[0])}–${whole(range[1])} WPM`} />
+          </dl>
+        </Statistics>
+        <PaceCharts pace={measured.pace} />
+      </>
     );
   }
   return null;

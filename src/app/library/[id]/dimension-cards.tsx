@@ -7,6 +7,7 @@ import type { JudgedResult } from "@/lib/assessment/score";
 import { DimensionIcon } from "./dimension-icons";
 import { DimensionStats } from "./dimension-stats";
 import { DrawerCloseButton, useDrawer } from "./drawer";
+import { PaceChip } from "./pace-charts";
 import { Bar, ScoreOutOf } from "./score-parts";
 
 type Scores = Record<DimensionKey, number | null>;
@@ -71,7 +72,10 @@ function Drawer({ dimension, scores, measured, judged, durationSeconds, onClose 
       </header>
 
       <div>
-        <ScoreOutOf score={score} max={max} />
+        <div className="drawer-score">
+          <ScoreOutOf score={score} max={max} />
+          {dimension === "pace" && <PaceChip band={measured.pace.activeBand} />}
+        </div>
         <Bar value={score ?? 0} max={max} />
       </div>
       {judged && <p>{judged.dimensions[dimension].summary}</p>}

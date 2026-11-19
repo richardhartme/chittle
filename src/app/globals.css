@@ -36,6 +36,15 @@
   --dimension-pronunciation: #8a4fe0;
   --dimension-filler: #d63a48;
   --dimension-pace: #d89b00;
+
+  /* Pace charts: the banded scales (grey, amber, then green for the ideal) and the series, validated
+     for colour-blind separation against the surface. */
+  --scale-outer: #d8d0e2;
+  --scale-near: #f0b23e;
+  --scale-ideal: #2e9e68;
+  --pace-speech: #6a4fd6;
+  --pace-rush: #d63a48;
+  --pace-drag: #1f8fb0;
   --radius: 20px;
   --radius-sm: 12px;
   --shadow: 0 1px 2px rgb(43 11 125 / 0.05), 0 8px 24px -12px rgb(43 11 125 / 0.14);
@@ -70,6 +79,13 @@
     --dimension-pronunciation: #b78dff;
     --dimension-filler: #ff6b78;
     --dimension-pace: #ffc93d;
+
+    --scale-outer: #4b4166;
+    --scale-near: #c98f22;
+    --scale-ideal: #2f9e69;
+    --pace-speech: #8b70ea;
+    --pace-rush: #e8505e;
+    --pace-drag: #22a9a0;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.5);
   }
 }
@@ -921,6 +937,217 @@ html:has(dialog.drawer[open]) {
   gap: 3px;
   margin-top: 0.35rem;
   font-size: 0.8rem;
+}
+
+/* Pace: the chip beside the score, the banded WPM scales and the two charts. */
+.drawer-score {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.chip {
+  padding: 0.15rem 0.7rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--scale-near);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--heading);
+}
+
+.chip.ideal {
+  border-color: var(--scale-ideal);
+}
+
+.banded-scale + .banded-scale {
+  margin-top: 0.5rem;
+}
+
+.banded-scale-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+
+.banded-scale-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--heading);
+}
+
+.banded-scale-header p {
+  margin: 0;
+}
+
+.banded-scale-header strong {
+  font-size: 1.2rem;
+  color: var(--heading);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-explanation {
+  margin: 0.25rem 0 0;
+  font-size: 0.925rem;
+}
+
+.chart {
+  display: block;
+  overflow: visible;
+  font-size: 12px;
+}
+
+.chart text {
+  fill: var(--muted);
+}
+
+.chart .axis text {
+  font-variant-numeric: tabular-nums;
+}
+
+.scale-band.outer {
+  fill: var(--scale-outer);
+}
+
+.scale-band.near {
+  fill: var(--scale-near);
+}
+
+.scale-band.ideal {
+  fill: var(--scale-ideal);
+}
+
+.scale-pointer {
+  fill: var(--ink);
+  stroke: var(--surface);
+  stroke-width: 1.5px;
+  paint-order: stroke;
+}
+
+.scale-bracket path {
+  stroke: var(--muted);
+  stroke-width: 1.5px;
+}
+
+.scale-bracket text {
+  fill: var(--text);
+}
+
+.chart .gridline {
+  stroke: var(--border);
+  stroke-width: 1px;
+}
+
+.chart .ideal-band {
+  fill: var(--scale-ideal);
+  fill-opacity: 0.2;
+}
+
+.chart .baseline-range {
+  fill: var(--pace-speech);
+  fill-opacity: 0.18;
+}
+
+.chart .baseline line {
+  stroke: var(--muted);
+  stroke-width: 1px;
+}
+
+.chart .threshold line {
+  stroke-width: 1.5px;
+  stroke-dasharray: 5 4;
+}
+
+.chart .threshold.rush line {
+  stroke: var(--pace-rush);
+}
+
+.chart .threshold.drag line {
+  stroke: var(--pace-drag);
+}
+
+.chart .wpm-line {
+  fill: none;
+  stroke: var(--pace-speech);
+  stroke-width: 2px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.chart .end-dot {
+  fill: var(--pace-speech);
+  stroke: var(--surface);
+  stroke-width: 2px;
+}
+
+.chart .segment line {
+  stroke: var(--pace-speech);
+  stroke-width: 4px;
+  stroke-linecap: round;
+}
+
+.chart .segment.rush line {
+  stroke: var(--pace-rush);
+}
+
+.chart .segment.drag line {
+  stroke: var(--pace-drag);
+}
+
+.chart .hit {
+  fill: transparent;
+}
+
+.chart .hit:hover {
+  fill: var(--text);
+  fill-opacity: 0.06;
+}
+
+.chart-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  font-size: 0.875rem;
+}
+
+.chart-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.chart-legend .key {
+  display: inline-block;
+  width: 1rem;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--pace-speech);
+}
+
+.chart-legend .key.rush {
+  background: var(--pace-rush);
+}
+
+.chart-legend .key.drag {
+  background: var(--pace-drag);
+}
+
+.chart-legend .key.baseline-range {
+  height: 0.75rem;
+  background: color-mix(in srgb, var(--pace-speech) 18%, transparent);
+}
+
+.chart-legend .key.threshold {
+  height: 2px;
+  background: repeating-linear-gradient(to right, var(--pace-rush) 0 5px, transparent 5px 8px);
+}
+
+.chart-legend .key.threshold.drag {
+  background: repeating-linear-gradient(to right, var(--pace-drag) 0 5px, transparent 5px 8px);
 }
 
 .overall-result > h2 {

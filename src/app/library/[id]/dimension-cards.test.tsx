@@ -23,16 +23,27 @@ const measured: Measurement = {
     activeWpm: 172.3,
     overallBand: "Ideal",
     activeBand: "Slow",
-    segments: [],
+    segments: [
+      { start: 0.5, end: 6.2, words: 17, wpm: 178.9 },
+      { start: 7, end: 12.4, words: 16, wpm: 177.8 },
+      { start: 13.1, end: 15.1, words: 9, wpm: 270 },
+      { start: 16.6, end: 20.5, words: 12, wpm: 184.6 },
+    ],
     baselineWpm: 181.2,
     baselineRange: [164.4, 199.8],
     baselineBand: "Ideal",
     rushThreshold: 246.4,
     dragThreshold: 116,
-    rushZones: [],
+    rushZones: [{ start: 13.1, end: 15.1, words: 9, wpm: 270 }],
     dragZones: [],
     hesitationZones: [{ start: 10, end: 11.5, seconds: 1.5 }],
-    overTime: { windows: [], average: 170.4, standardDeviation: 20.26, range: [130.2, 210.7] },
+    overTime: {
+      windows: [
+        { start: 0.5, end: 7.2, wpm: 130.2 },
+        { start: 7.2, end: 13.9, wpm: 179.1 },
+        { start: 13.9, end: 20.5, wpm: 210.7 },
+      ],
+      average: 170.4, standardDeviation: 20.26, range: [130.2, 210.7] },
   },
   sentences: { words: 350, sentences: 20, averageLength: 17.5, averageBand: "Ideal", longSentences: 1 },
   scores: { pace: 89, fillerRate: 139, pronunciation: 133 },
@@ -214,6 +225,25 @@ describe("DimensionCards", () => {
     expect(stat("Average WPM")).toHaveTextContent(/^170$/);
     expect(stat("Standard deviation")).toHaveTextContent(/^±20 WPM$/);
     expect(stat("Range")).toHaveTextContent(/^130–211 WPM$/);
+  });
+
+  it("shows the pace label, the three WPM scales and both pace charts in the Pace drawer", async () => {
+    renderCards();
+    await userEvent.click(card(/^Pace/));
+    const open = within(drawer());
+
+    expect(open.getByText("Slow", { selector: ".chip" })).toBeInTheDocument();
+    expect(open.getByRole("img", { name: "Active WPM: 172, Slow" })).toBeInTheDocument();
+    expect(open.getByRole("img", { name: "Baseline WPM: 181, Ideal" })).toHaveAccessibleDescription(
+      /middle half of your fluent stretches ran from 164 to 200 WPM/,
+    );
+    expect(open.getByRole("img", { name: "Overall WPM: 142, Ideal" })).toBeInTheDocument();
+    expect(open.getByRole("img", { name: "WPM over time" })).toHaveAccessibleDescription(
+      /from 130 to 211 WPM.*3 windows/,
+    );
+    expect(open.getByRole("img", { name: "Pace variation" })).toHaveAccessibleDescription(
+      /4 stretches of speech.*1 rush zone.*no drag zones/,
+    );
   });
 
   it("has only the measured dimensions, without feedback, for an assessment from before judging", async () => {
