@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useId } from "react";
+import { useWidth } from "@/components/use-width";
 import {
   ACTIVE_WPM_BANDS,
   DRAG_FACTOR,
@@ -73,22 +74,6 @@ export function PaceCharts({ pace }: { pace: Pace }) {
       <PaceVariation pace={pace} />
     </>
   );
-}
-
-/** The width of the element, kept up to date as it resizes, so charts draw at their real size. */
-function useWidth<T extends HTMLElement>(fallback = 440) {
-  const ref = useRef<T>(null);
-  const [width, setWidth] = useState(fallback);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(([entry]) => {
-      if (entry.contentRect.width > 0) setWidth(Math.round(entry.contentRect.width));
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-  return [ref, width] as const;
 }
 
 const SCALE = { bar: 12, pointer: 7, bracket: 26, gap: 2 } as const;

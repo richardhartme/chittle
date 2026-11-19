@@ -12,7 +12,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
 }
 
 async function Login({ searchParams }: Pick<PageProps<"/login">, "searchParams">) {
-  if (await getCurrentUser()) redirect("/practice");
+  if (await getCurrentUser()) redirect("/");
   const { error } = await searchParams;
 
   return (
