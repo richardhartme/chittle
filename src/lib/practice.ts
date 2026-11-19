@@ -47,3 +47,19 @@ export function setupHref(path: string, setup: PracticeSetup): string {
 export function recordingMode(mimeType: string): Mode {
   return mimeType.trim().toLowerCase().startsWith("audio/") ? "audio" : "video";
 }
+
+/** Speaking times for a retake are offered in steps of this many seconds. */
+const RETAKE_STEP_SECONDS = 30;
+
+/**
+ * A link to setup for a retake of a recording: the same topic and mode, with the speaking time
+ * taken from how long the recording ran, rounded to the nearest step and within the limits.
+ */
+export function practiceAgainHref(recording: { topicId: string; durationSeconds: number; mimeType: string }): string {
+  const rounded = Math.round(recording.durationSeconds / RETAKE_STEP_SECONDS) * RETAKE_STEP_SECONDS;
+  return setupHref("/practice", {
+    topicId: recording.topicId,
+    speakSeconds: clampSpeakSeconds(rounded),
+    mode: recordingMode(recording.mimeType),
+  });
+}

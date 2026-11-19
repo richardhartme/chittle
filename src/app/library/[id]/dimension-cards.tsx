@@ -8,18 +8,25 @@ import { DimensionIcon } from "./dimension-icons";
 import { DimensionStats } from "./dimension-stats";
 import { DrawerCloseButton, useDrawer } from "./drawer";
 import { PaceChip } from "./pace-charts";
-import { Bar, ScoreOutOf } from "./score-parts";
+import { Bar, changeDirection, formatChange, ScoreChange, ScoreOutOf } from "./score-parts";
 
 type Scores = Record<DimensionKey, number | null>;
 
-type Props = { scores: Scores; measured: Measurement; judged?: JudgedResult; durationSeconds: number };
+type Props = {
+  scores: Scores;
+  /** The previous attempt's scores, when this is a retake. Each card shows its change against them. */
+  previousScores?: Scores | null;
+  measured: Measurement;
+  judged?: JudgedResult;
+  durationSeconds: number;
+};
 
 /**
  * A card for each dimension's score. Each opens a drawer with the dimension's summary, sub-scores and
  * statistics. Assessments from before judging (no `judged`) have the measured dimensions only.
  */
 export function DimensionCards(props: Props) {
-  const { scores, judged } = props;
+  const { scores, previousScores, judged } = props;
   const keys = judged ? DIMENSION_KEYS : DIMENSION_KEYS.filter((key) => DIMENSIONS[key].source === "measured");
   const cards = useRef<Partial<Record<DimensionKey, HTMLButtonElement | null>>>({});
   const drawer = useDrawer<DimensionKey>((dimension) => cards.current[dimension]?.focus());
@@ -42,6 +49,7 @@ export function DimensionCards(props: Props) {
               <DimensionIcon dimension={key} />
               <span className="dimension-card-name">{DIMENSIONS[key].name}</span>
               <ScoreOutOf score={scores[key]} max={DIMENSIONS[key].max} as="span" />
+              <CardChange score={scores[key]} previous={previousScores?.[key] ?? null} />
               <svg className="chevron" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20">
                 <path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
               </svg>
@@ -53,6 +61,25 @@ export function DimensionCards(props: Props) {
       <dialog {...drawer.dialogProps} className={`drawer ${open ?? ""}`} aria-labelledby="drawer-title">
         {open && <Drawer dimension={open} {...props} onClose={drawer.close} />}
       </dialog>
+    </>
+  );
+}
+
+const ARROWS = { up: "▲", down: "▼", same: "" };
+
+/** The change in a card's score since the previous attempt. Nothing when either attempt has no score. */
+function CardChange({ score, previous }: { score: number | null; previous: number | null }) {
+  if (score === null || previous === null) return null;
+  const change = score - previous;
+  const arrow = ARROWS[changeDirection(change)];
+  return (
+    <>
+      {" "}
+      <ScoreChange change={change}>
+        {arrow && <span aria-hidden="true">{arrow} </span>}
+        {formatChange(change)}{" "}
+        <span className="sr-only">since your previous attempt</span>
+      </ScoreChange>
     </>
   );
 }

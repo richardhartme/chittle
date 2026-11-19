@@ -24,6 +24,16 @@ export const assessmentStateColumns = {
   stale: isStale,
 };
 
+/** Each dimension's score column, to select as a nested `scores` object keyed like `DIMENSIONS`. */
+export const dimensionScoreColumns = {
+  structure: assessments.structureScore,
+  conciseness: assessments.concisenessScore,
+  confidence: assessments.confidenceScore,
+  pronunciation: assessments.pronunciationScore,
+  fillerRate: assessments.fillerRateScore,
+  pace: assessments.paceScore,
+};
+
 /** Builds the state from those columns. A left join with no assessment gives nulls, or a null object when nested. */
 export function toAssessmentState(
   row: { status: AssessmentStatus | null; error: string | null; stale: boolean | null } | null,

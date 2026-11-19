@@ -5,13 +5,19 @@ import { Suspense } from "react";
 import { z } from "zod";
 import { assessRecording } from "@/app/actions";
 import { db } from "@/db";
-import { assessments, recordings, topics, transcripts } from "@/db/schema";
+import { assessments, type Recording, recordings, topics, transcripts } from "@/db/schema";
 import { DIMENSION_KEYS, type DimensionKey } from "@/lib/assessment/dimensions";
-import { assessmentStateColumns, toAssessmentState, type AssessmentState } from "@/lib/assessment/status";
+import { previousAttempt } from "@/lib/assessment/previous-attempt";
+import {
+  assessmentStateColumns,
+  dimensionScoreColumns,
+  toAssessmentState,
+  type AssessmentState,
+} from "@/lib/assessment/status";
 import { requireUser } from "@/lib/auth/session";
 import { hasProviderKeys } from "@/lib/provider-keys";
 import { formatDate, formatDuration } from "@/lib/format";
-import { recordingMode } from "@/lib/practice";
+import { practiceAgainHref, recordingMode } from "@/lib/practice";
 import { AssessmentPoller } from "./assessment-poller";
 import { CoachInsightsDrawer } from "./coach-insights";
 import { DeleteForm } from "./delete-form";
@@ -62,29 +68,24 @@ async function Recording({ params }: Pick<PageProps<"/library/[id]">, "params">)
         <video controls preload="metadata" src={src} />
       )}
 
-      <AssessmentPanel
-        recordingId={recording.id}
-        userId={user.id}
-        assessment={assessment}
-        durationSeconds={recording.durationSeconds}
-      />
+      <AssessmentPanel recording={recording} assessment={assessment} />
+
+      <p className="row">
+        <Link className="button primary" href={practiceAgainHref(recording)}>
+          Practise again
+        </Link>
+        <Link className="button" href="/">
+          Home
+        </Link>
+      </p>
 
       <DeleteForm recordingId={recording.id} />
     </div>
   );
 }
 
-async function AssessmentPanel({
-  recordingId,
-  userId,
-  assessment,
-  durationSeconds,
-}: {
-  recordingId: string;
-  userId: string;
-  assessment: AssessmentState;
-  durationSeconds: number;
-}) {
+async function AssessmentPanel({ recording, assessment }: { recording: Recording; assessment: AssessmentState }) {
+  const { id: recordingId, userId, durationSeconds } = recording;
   if (assessment.status === "pending") {
     return (
       <section className="card" aria-live="polite">
@@ -100,14 +101,7 @@ async function AssessmentPanel({
         transcript: transcripts.text,
         audioSeconds: transcripts.audioSeconds,
         total: assessments.totalScore,
-        scores: {
-          structure: assessments.structureScore,
-          conciseness: assessments.concisenessScore,
-          confidence: assessments.confidenceScore,
-          pronunciation: assessments.pronunciationScore,
-          fillerRate: assessments.fillerRateScore,
-          pace: assessments.paceScore,
-        },
+        scores: dimensionScoreColumns,
         result: assessments.result,
         scoringVersion: assessments.scoringVersion,
       })
@@ -115,16 +109,21 @@ async function AssessmentPanel({
       .leftJoin(transcripts, eq(transcripts.recordingId, assessments.recordingId))
       .where(eq(assessments.recordingId, recordingId));
     const judged = row?.result?.judged;
-    const canReassess = await hasProviderKeys(userId);
+    const [canReassess, previous] = await Promise.all([hasProviderKeys(userId), previousAttempt(recording)]);
+    // Only a scored assessment is compared, so the cards' changes always sit beside the total's.
+    const compared = judged && row.total !== null ? previous : null;
     return (
       <>
         <ReassessPanel recordingId={recordingId} scoringVersion={row?.scoringVersion ?? null} canReassess={canReassess} />
         {/* Assessments from before judging was added have no total or feedback. */}
-        {judged && row.total !== null && <ScoreComposition total={row.total} scores={scoredOf(row.scores)} />}
+        {judged && row.total !== null && (
+          <ScoreComposition total={row.total} scores={scoredOf(row.scores)} previous={compared} />
+        )}
         {/* Assessments from before measuring was added have no result. */}
         {row?.result && (
           <DimensionCards
             scores={row.scores}
+            previousScores={compared?.scores}
             measured={row.result.measured}
             judged={judged}
             // The rates per minute were worked out from the transcript's length, so the duration shown beside them is too.
