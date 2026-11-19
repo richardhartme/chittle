@@ -93,7 +93,8 @@ function metrics(measured: Measurement): string {
   ].join("\n");
 }
 
-function focusVotesSection(votes: CastFocusVote[]): string {
+/** The speaker's focus votes as a prompt section, grouped by which way they voted. Empty when there are none. */
+export function focusVotesSection(votes: CastFocusVote[]): string {
   const group = (heading: string, vote: FocusVote) => {
     const areas = votes.filter((v) => v.vote === vote).map((v) => `- ${v.area}`);
     return areas.length ? [heading, ...areas] : [];

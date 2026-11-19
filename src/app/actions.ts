@@ -130,7 +130,7 @@ export async function deleteAccount(formData: FormData) {
   if (formData.get("confirm") !== user.email) redirect("/account?error=confirm");
 
   await getStorage().deletePrefix(user.id);
-  await db.delete(users).where(eq(users.id, user.id)); // cascades to sessions, recordings, seen topics, provider keys, focus votes
+  await db.delete(users).where(eq(users.id, user.id)); // cascades to sessions, recordings, seen topics, provider keys, focus votes, progress insight
   await destroySession();
   redirect("/");
 }

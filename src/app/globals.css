@@ -1197,6 +1197,22 @@ html:has(dialog.drawer[open]) {
   margin: 0 0 0.5rem;
 }
 
+/* The dashboard's progress insight. */
+.progress-insight h2 {
+  font-size: 1.1rem;
+  margin: 0 0 0.5rem;
+}
+
+.progress-insight p {
+  margin: 0;
+}
+
+.progress-insight .progress-insight-text {
+  font-size: 1.05rem;
+  line-height: 1.55;
+  margin-bottom: 0.5rem;
+}
+
 .feedback-lists ul {
   margin: 0;
   padding-left: 1.25rem;

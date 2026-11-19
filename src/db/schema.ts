@@ -189,6 +189,18 @@ export const focusVotes = pgTable(
   ],
 );
 
+/**
+ * The coaching observation across a speaker's recent assessments shown on their dashboard, regenerated
+ * after each assessment so the dashboard never waits on Claude.
+ */
+export const progressInsights = pgTable("progress_insights", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  text: text("text").notNull(),
+  generatedAt: timestamp("generated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type User = typeof users.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type Topic = typeof topics.$inferSelect;

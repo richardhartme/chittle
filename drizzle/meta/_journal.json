@@ -50,6 +50,13 @@
       "when": 1795082343074,
       "tag": "0006_focus_votes",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795083500193,
+      "tag": "0007_progress_insights",
+      "breakpoints": true
     }
   ]
 }
