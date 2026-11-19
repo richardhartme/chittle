@@ -5,10 +5,11 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/db";
-import { provider, recordings, users } from "@/db/schema";
+import { type FocusVote, focusVote, provider, recordings, users } from "@/db/schema";
 import { startAssessment } from "@/lib/assessment";
 import { consumeMagicLink, normaliseEmail, requestMagicLink } from "@/lib/auth/magic-link";
 import { createSession, destroySession, requireUser } from "@/lib/auth/session";
+import { saveFocusVote, type SaveFocusVoteResult } from "@/lib/focus-votes";
 import * as providerKeyStore from "@/lib/provider-keys";
 import { getStorage } from "@/lib/storage";
 
@@ -87,6 +88,25 @@ export async function assessRecording(formData: FormData) {
   refresh();
 }
 
+const focusVoteSchema = z.object({
+  recordingId: z.uuid(),
+  area: z.string().min(1),
+  vote: z.enum(focusVote.enumValues).nullable(),
+});
+
+/**
+ * Casts, changes or (with `null`) clears a focus vote on one of a recording's areas to improve. Called
+ * by the results page's toggles, which update optimistically, so it returns rather than refreshing.
+ */
+export async function setFocusVote(recordingId: string, area: string, vote: FocusVote | null): Promise<SaveFocusVoteResult> {
+  const user = await requireUser();
+  const input = focusVoteSchema.safeParse({ recordingId, area, vote });
+  if (!input.success) return { error: "That vote couldn't be saved." };
+
+  // Scoped to the signed-in user, so nobody can vote on another speaker's recording.
+  return saveFocusVote(user.id, input.data.recordingId, input.data.area, input.data.vote);
+}
+
 export async function deleteRecording(formData: FormData) {
   const user = await requireUser();
   const id = z.uuid().safeParse(formData.get("recordingId"));
@@ -110,7 +130,7 @@ export async function deleteAccount(formData: FormData) {
   if (formData.get("confirm") !== user.email) redirect("/account?error=confirm");
 
   await getStorage().deletePrefix(user.id);
-  await db.delete(users).where(eq(users.id, user.id)); // cascades to sessions, recordings, seen topics, provider keys
+  await db.delete(users).where(eq(users.id, user.id)); // cascades to sessions, recordings, seen topics, provider keys, focus votes
   await destroySession();
   redirect("/");
 }

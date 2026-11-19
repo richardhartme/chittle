@@ -43,6 +43,13 @@
       "when": 1795038240665,
       "tag": "0005_category_frameworks",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795082343074,
+      "tag": "0006_focus_votes",
+      "breakpoints": true
     }
   ]
 }

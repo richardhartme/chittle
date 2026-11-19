@@ -41,8 +41,12 @@ import {
   removeProviderKey,
   requestLoginLink,
   saveProviderKey,
+  setFocusVote,
   verifyLoginLink,
 } from "./actions";
+import { measure } from "@/lib/assessment/measure";
+import { scoreJudgement } from "@/lib/assessment/score";
+import { focusVotesOn } from "@/lib/focus-votes";
 
 const temp = withTempStorage();
 
@@ -205,6 +209,82 @@ describe("assessRecording", () => {
 
     expect(after).not.toHaveBeenCalled();
     expect(await assessmentOf(recording.id)).toMatchObject({ status: "done", scoringVersion: 1 });
+  });
+});
+
+describe("setFocusVote", () => {
+  const areas = ["Open with your point", "Cut the hedges"];
+
+  /** A recording whose done assessment lists `areas` as its areas to improve. */
+  async function judgedRecording(userId: string) {
+    const topic = await createTopic((await createCategory()).id);
+    const recording = await createRecording(userId, topic.id);
+    const words = wordsOf("We should ship it now.");
+    const measured = measure(words, 2);
+    const { judged } = scoreJudgement({ judgement: judgementFixture({ areasToImprove: areas }), measured, words, durationSeconds: 2 });
+    await db.insert(assessments).values({
+      recordingId: recording.id,
+      status: "done",
+      startedAt: new Date(Date.now() - 60_000),
+      completedAt: new Date(),
+      scoringVersion: 3,
+      result: { measured, judged },
+    });
+    return recording;
+  }
+
+  it("stores a vote on an area to improve", async () => {
+    const user = await signIn();
+    const recording = await judgedRecording(user.id);
+
+    expect(await setFocusVote(recording.id, "Cut the hedges", "up")).toEqual({ saved: true });
+
+    expect(await focusVotesOn(user.id, recording.id)).toEqual({ "Cut the hedges": "up" });
+  });
+
+  it("changes a vote, and clears it", async () => {
+    const user = await signIn();
+    const recording = await judgedRecording(user.id);
+    await setFocusVote(recording.id, "Cut the hedges", "up");
+    await setFocusVote(recording.id, "Open with your point", "up");
+
+    expect(await setFocusVote(recording.id, "Cut the hedges", "down")).toEqual({ saved: true });
+    expect(await focusVotesOn(user.id, recording.id)).toEqual({ "Cut the hedges": "down", "Open with your point": "up" });
+
+    expect(await setFocusVote(recording.id, "Cut the hedges", null)).toEqual({ saved: true });
+    expect(await focusVotesOn(user.id, recording.id)).toEqual({ "Open with your point": "up" });
+  });
+
+  it("requires sign-in", async () => {
+    expect(await redirectedTo(() => setFocusVote(crypto.randomUUID(), "Cut the hedges", "up"))).toBe("/login");
+  });
+
+  it("refuses another speaker's recording", async () => {
+    const other = await createUser();
+    const recording = await judgedRecording(other.id);
+    await signIn();
+
+    expect(await setFocusVote(recording.id, "Cut the hedges", "up")).toEqual({ error: expect.any(String) });
+    expect(await focusVotesOn(other.id, recording.id)).toEqual({});
+  });
+
+  it("refuses an area that isn't in the assessment", async () => {
+    const user = await signIn();
+    const recording = await judgedRecording(user.id);
+
+    expect(await setFocusVote(recording.id, "Speak more slowly", "up")).toEqual({ error: expect.any(String) });
+    expect(await focusVotesOn(user.id, recording.id)).toEqual({});
+  });
+
+  it("refuses a recording that isn't assessed, and a malformed vote", async () => {
+    const user = await signIn();
+    const recording = await createRecording(user.id, (await createTopic((await createCategory()).id)).id);
+    const judged = await judgedRecording(user.id);
+
+    expect(await setFocusVote(recording.id, "Cut the hedges", "up")).toEqual({ error: expect.any(String) });
+    expect(await setFocusVote(judged.id, "Cut the hedges", "sideways" as never)).toEqual({ error: expect.any(String) });
+    expect(await setFocusVote("nope", "Cut the hedges", "up")).toEqual({ error: expect.any(String) });
+    expect(await focusVotesOn(user.id, judged.id)).toEqual({});
   });
 });
 

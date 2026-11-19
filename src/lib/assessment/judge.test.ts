@@ -12,6 +12,7 @@ const input = (overrides: Partial<JudgeInput> = {}): JudgeInput => ({
   transcript: "Um, so I led the migration. We finished two weeks early.",
   durationSeconds: 75,
   measured: measure(words, 75),
+  focusVotes: [],
   ...overrides,
 });
 
@@ -93,5 +94,48 @@ describe("buildJudgeRequest", () => {
     expect(system).toMatch(/British English/);
     expect(system).toMatch(/accent never lowers a score/i);
     expect(system).toMatch(/quote the speaker's own words/i);
+  });
+
+  it("gives Claude the speaker's recent focus votes, grouped up and down, newest first", () => {
+    const message = userMessage(
+      buildJudgeRequest(
+        input({
+          focusVotes: [
+            { area: "Open with your point", vote: "up" },
+            { area: "Use fewer statistics", vote: "down" },
+            { area: "Cut the hedges", vote: "up" },
+            { area: "Smile more", vote: "down" },
+          ],
+        }),
+      ),
+    );
+
+    const section = message.match(/<focus_votes>\n([\s\S]*?)\n<\/focus_votes>/)?.[1];
+    expect(section).toBe(
+      [
+        "Areas I want to work on:",
+        "- Open with your point",
+        "- Cut the hedges",
+        "Feedback I didn't find useful:",
+        "- Use fewer statistics",
+        "- Smile more",
+      ].join("\n"),
+    );
+  });
+
+  it("leaves out a group with no votes, and the section when there are none", () => {
+    const upOnly = userMessage(buildJudgeRequest(input({ focusVotes: [{ area: "Cut the hedges", vote: "up" }] })));
+    const none = userMessage(buildJudgeRequest(input()));
+
+    expect(upOnly).toContain("Areas I want to work on:\n- Cut the hedges");
+    expect(upOnly).not.toContain("didn't find useful");
+    expect(none).not.toContain("<focus_votes>");
+  });
+
+  it("tells Claude to keep checking up-voted areas and not to repeat feedback voted down", () => {
+    const system = systemPrompt(buildJudgeRequest(input()));
+
+    expect(system).toMatch(/areas I want to work on.*keep checking/i);
+    expect(system).toMatch(/didn't find useful.*don't repeat/i);
   });
 });

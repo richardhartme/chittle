@@ -164,6 +164,31 @@ export const assessments = pgTable("assessments", {
   result: jsonb("result").$type<AssessmentResult>(),
 });
 
+export const focusVote = pgEnum("focus_vote", ["up", "down"]);
+
+/** A speaker's thumbs up or down on one of a recording's areas to improve, fed into later assessments. */
+export const focusVotes = pgTable(
+  "focus_votes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    recordingId: uuid("recording_id")
+      .notNull()
+      .references(() => recordings.id, { onDelete: "cascade" }),
+    // The area-to-improve text as the assessment wrote it. Kept after a re-assess drops the area.
+    area: text("area").notNull(),
+    vote: focusVote("vote").notNull(),
+    // When the vote was last cast, so changing a vote makes it recent again.
+    createdAt: createdAt(),
+  },
+  (t) => [
+    unique("focus_votes_recording_area_unique").on(t.recordingId, t.area),
+    index("focus_votes_user_created_idx").on(t.userId, t.createdAt),
+  ],
+);
+
 export type User = typeof users.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type Topic = typeof topics.$inferSelect;
@@ -172,3 +197,4 @@ export type Provider = (typeof provider.enumValues)[number];
 export type Transcript = typeof transcripts.$inferSelect;
 export type Assessment = typeof assessments.$inferSelect;
 export type AssessmentStatus = (typeof assessmentStatus.enumValues)[number];
+export type FocusVote = (typeof focusVote.enumValues)[number];

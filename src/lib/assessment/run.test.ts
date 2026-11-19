@@ -1,6 +1,6 @@
 import { eq, sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { assessments, transcripts } from "@/db/schema";
+import { assessments, focusVotes, transcripts } from "@/db/schema";
 import { createCategory, createRecording, createTopic, createUser, db, resetDb } from "@/test/db";
 import { claudeFails, claudeReplies, stream } from "@/test/claude";
 import { judgementFixture } from "@/test/judgement";
@@ -16,6 +16,8 @@ import { runAssessment } from "./run";
 const temp = withTempStorage();
 const keys = { deepgram: "dg-secret-key", anthropic: "sk-secret-key" };
 
+let userId: string;
+let topicId: string;
 let recordingId: string;
 let claim: Date;
 
@@ -28,6 +30,8 @@ beforeEach(async () => {
   const category = await createCategory("interview", "Interview", "star");
   const topic = await createTopic(category.id, "Tell me about a project you are proud of.");
   const recording = await createRecording(user.id, topic.id, { mimeType: "audio/webm" });
+  userId = user.id;
+  topicId = topic.id;
   await temp.storage().put(recording.storageKey, streamOf("audio-bytes"));
   recordingId = recording.id;
   claim = (await claimAssessment(recordingId))!;
@@ -104,6 +108,40 @@ describe("runAssessment", () => {
     expect(message).toContain("Tell me about a project you are proud of.");
     expect(message).toContain("STAR");
     expect(message).toContain("Um, hello.");
+  });
+
+  it("gives Claude the speaker's 20 most recent focus votes, newest first, and nobody else's", async () => {
+    deepgramReplies(success());
+    const earlier = await createRecording(userId, topicId);
+    // 22 votes, a minute apart: "Area 21" is the newest, and "Area 0" and "Area 1" are too old to send.
+    await db.insert(focusVotes).values(
+      Array.from({ length: 22 }, (_, i) => ({
+        userId,
+        recordingId: earlier.id,
+        area: `Area ${i}`,
+        vote: i % 2 ? ("up" as const) : ("down" as const),
+        createdAt: new Date(Date.UTC(2026, 10, 1, 9, i)),
+      })),
+    );
+    const other = await createUser();
+    await db.insert(focusVotes).values({
+      userId: other.id,
+      recordingId: (await createRecording(other.id, topicId)).id,
+      area: "Someone else's area",
+      vote: "up",
+    });
+
+    await runAssessment(recordingId, claim, keys);
+
+    const message: string = stream.mock.calls[0][0].messages[0].content;
+    /** The areas listed under a heading, in order. */
+    const listed = (heading: string) => {
+      const lines = message.split(`${heading}\n`)[1].split("\n");
+      return lines.slice(0, lines.findIndex((line) => !line.startsWith("- "))).map((line) => line.slice(2));
+    };
+    expect(listed("Areas I want to work on:")).toEqual([21, 19, 17, 15, 13, 11, 9, 7, 5, 3].map((i) => `Area ${i}`));
+    expect(listed("Feedback I didn't find useful:")).toEqual([20, 18, 16, 14, 12, 10, 8, 6, 4, 2].map((i) => `Area ${i}`));
+    expect(message).not.toContain("Someone else's area");
   });
 
   it("stores a done assessment with every score, the total, the feedback and the coach insights, at scoring version 3", async () => {
