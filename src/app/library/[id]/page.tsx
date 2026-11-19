@@ -17,6 +17,7 @@ import { CoachInsightsDrawer } from "./coach-insights";
 import { DeleteForm } from "./delete-form";
 import { DimensionCards } from "./dimension-cards";
 import { OverallResult } from "./overall-result";
+import { ReassessPanel } from "./reassess-panel";
 import { ScoreComposition } from "./score-composition";
 
 export default function RecordingPage({ params }: PageProps<"/library/[id]">) {
@@ -108,13 +109,16 @@ async function AssessmentPanel({
           pace: assessments.paceScore,
         },
         result: assessments.result,
+        scoringVersion: assessments.scoringVersion,
       })
       .from(assessments)
       .leftJoin(transcripts, eq(transcripts.recordingId, assessments.recordingId))
       .where(eq(assessments.recordingId, recordingId));
     const judged = row?.result?.judged;
+    const canReassess = await hasProviderKeys(userId);
     return (
       <>
+        <ReassessPanel recordingId={recordingId} scoringVersion={row?.scoringVersion ?? null} canReassess={canReassess} />
         {/* Assessments from before judging was added have no total or feedback. */}
         {judged && row.total !== null && <ScoreComposition total={row.total} scores={scoredOf(row.scores)} />}
         {/* Assessments from before measuring was added have no result. */}

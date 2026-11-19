@@ -7,13 +7,7 @@ import { judge } from "./judge";
 import { measure } from "./measure";
 import type { AssessmentResult } from "./result";
 import { scoreJudgement } from "./score";
-
-/**
- * Bump when the scoring rules or prompts change. Version 1 had the measured dimensions only; version 2
- * adds Claude's judged dimensions, the feedback and the total; version 3 adds the coach insights,
- * including the ideal version.
- */
-export const SCORING_VERSION = 3;
+import { SCORING_VERSION } from "./version";
 
 export type AssessmentKeys = { deepgram: string; anthropic: string };
 
@@ -80,7 +74,10 @@ export async function runAssessment(recordingId: string, claimedAt: Date, keys: 
   }
 }
 
-/** Records the outcome, unless a Retry has since claimed the assessment again (its start time has moved on). */
+/**
+ * Records the outcome, unless a Retry or Re-assess has since claimed the assessment again (its start
+ * time has moved on).
+ */
 async function finish(
   recordingId: string,
   claimedAt: Date,

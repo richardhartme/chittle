@@ -3,9 +3,25 @@ import { db } from "@/db";
 import { assessments } from "@/db/schema";
 import { isStale } from "./status";
 
+/** What a claim resets: a Re-assess replaces the previous result rather than keeping it if it fails. */
+const NO_RESULT = {
+  completedAt: null,
+  error: null,
+  scoringVersion: null,
+  totalScore: null,
+  structureScore: null,
+  concisenessScore: null,
+  confidenceScore: null,
+  pronunciationScore: null,
+  fillerRateScore: null,
+  paceScore: null,
+  result: null,
+} satisfies Partial<typeof assessments.$inferInsert>;
+
 /**
- * Marks a recording's assessment as pending from now, unless one is already running. One atomic
- * upsert, so two simultaneous claims can't both succeed. Returns the claim's start time, which the run
+ * Marks a recording's assessment as pending from now, unless one is already running. Used by Assess,
+ * Retry and Re-assess, and clears any previous result. One atomic upsert, so two simultaneous claims
+ * can't both succeed. Returns the claim's start time, which the run
  * uses to check that its claim hasn't been taken over, or null if an assessment is already running.
  */
 export async function claimAssessment(recordingId: string): Promise<Date | null> {
@@ -16,7 +32,7 @@ export async function claimAssessment(recordingId: string): Promise<Date | null>
     .values({ recordingId, status: "pending", startedAt: now })
     .onConflictDoUpdate({
       target: assessments.recordingId,
-      set: { status: "pending", startedAt: now, completedAt: null, error: null },
+      set: { status: "pending", startedAt: now, ...NO_RESULT },
       setWhere: sql`${assessments.status} <> 'pending' or ${isStale}`,
     })
     .returning({ startedAt: assessments.startedAt });
