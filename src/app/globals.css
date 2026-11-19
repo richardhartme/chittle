@@ -1290,7 +1290,8 @@ html:has(dialog.drawer[open]) {
   grid-template-areas: "name chevron" "summary summary";
   gap: 0.35rem;
   width: 100%;
-  margin: 0;
+  /* The bottom margin every card has, which the button reset would drop. */
+  margin: 0 0 1.25rem;
   padding: 1.1rem 1.25rem;
   border: 1.5px solid var(--dimension);
   border-radius: var(--radius);
