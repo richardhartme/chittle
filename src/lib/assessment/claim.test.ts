@@ -55,6 +55,25 @@ describe("claimAssessment", () => {
     expect(await row()).toMatchObject({ status: "pending", error: null });
   });
 
+  it("reclaims a done assessment for Re-assess, clearing its previous scores and result", async () => {
+    await setRow("done", 1);
+    await db
+      .update(assessments)
+      .set({ completedAt: sql`now()`, scoringVersion: 2, totalScore: 640, paceScore: 90, result: { measured: {} } as never })
+      .where(eq(assessments.recordingId, recordingId));
+
+    expect(await claimAssessment(recordingId)).toBeInstanceOf(Date);
+
+    expect(await row()).toMatchObject({
+      status: "pending",
+      completedAt: null,
+      scoringVersion: null,
+      totalScore: null,
+      paceScore: null,
+      result: null,
+    });
+  });
+
   it("lets only one of two simultaneous claims through", async () => {
     const results = await Promise.all([claimAssessment(recordingId), claimAssessment(recordingId)]);
     expect(results.filter((r) => r !== null)).toHaveLength(1);

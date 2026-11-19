@@ -67,7 +67,10 @@ export async function removeProviderKey(formData: FormData) {
   refresh();
 }
 
-/** Assess (an unassessed recording) and Retry (a failed or stalled one) both start an assessment. */
+/**
+ * Assess (an unassessed recording), Retry (a failed or stalled one) and Re-assess (a done one, from its
+ * stored transcript) all start an assessment.
+ */
 export async function assessRecording(formData: FormData) {
   const user = await requireUser();
   const id = z.uuid().safeParse(formData.get("recordingId"));

@@ -3,11 +3,14 @@ import { stat } from "node:fs/promises";
 import path from "node:path";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { magicLinks, providerKeys, recordings, sessions, userSeenTopics, users } from "@/db/schema";
+import { assessments, magicLinks, providerKeys, recordings, sessions, transcripts, userSeenTopics, users } from "@/db/schema";
 import { hashToken } from "@/lib/auth/tokens";
 import { signIn } from "@/test/auth";
 import { createCategory, createRecording, createTopic, createUser, db, resetDb } from "@/test/db";
-import { cookieJar, redirectedTo, refresh, resetNextMocks } from "@/test/next";
+import { claudeReplies, stream } from "@/test/claude";
+import { judgementFixture, wordsOf } from "@/test/judgement";
+import { saveTestKeys } from "@/test/keys";
+import { after, afterSettled, cookieJar, redirectedTo, refresh, resetNextMocks } from "@/test/next";
 import { streamOf, withTempStorage } from "@/test/storage";
 
 vi.mock("@/db", async () => ({ db: (await import("@/test/db")).db }));
@@ -15,12 +18,15 @@ vi.mock("next/headers", async () => (await import("@/test/next")).headersMock);
 vi.mock("next/navigation", async () => (await import("@/test/next")).navigationMock);
 vi.mock("@/lib/auth/email", () => ({ sendMagicLinkEmail: vi.fn().mockResolvedValue(undefined) }));
 vi.mock("next/cache", async () => (await import("@/test/next")).cacheMock);
+vi.mock("next/server", async () => (await import("@/test/next")).serverMock);
 
 const listModels = vi.fn();
 vi.mock("@anthropic-ai/sdk", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@anthropic-ai/sdk")>()),
-  default: vi.fn(function (this: { models: { list: typeof listModels } }) {
+  // Listing models checks a key; streaming a message judges a recording.
+  default: vi.fn(function (this: { models: { list: typeof listModels }; beta: unknown }) {
     this.models = { list: listModels };
+    this.beta = { messages: { stream } };
   }),
 }));
 
@@ -28,6 +34,7 @@ import Anthropic, { APIConnectionError, AuthenticationError, PermissionDeniedErr
 import { sendMagicLinkEmail } from "@/lib/auth/email";
 import { getProviderKeys } from "@/lib/provider-keys";
 import {
+  assessRecording,
   deleteAccount,
   deleteRecording,
   logout,
@@ -131,6 +138,73 @@ describe("logout", () => {
 
     expect(await db.select().from(sessions)).toHaveLength(0);
     expect(cookieJar.has("chittle_session")).toBe(false);
+  });
+});
+
+describe("assessRecording", () => {
+  let topicId: string;
+
+  beforeEach(async () => {
+    topicId = (await createTopic((await createCategory("a")).id, "A topic")).id;
+    stream.mockClear();
+    claudeReplies(judgementFixture());
+  });
+
+  const assessmentOf = async (recordingId: string) =>
+    (await db.select().from(assessments).where(eq(assessments.recordingId, recordingId)))[0];
+
+  /** A recording assessed at scoring version 1, with its transcript stored. */
+  async function assessedRecording(userId: string) {
+    const recording = await createRecording(userId, topicId);
+    const text = "We should ship it now because the tests pass.";
+    await db.insert(transcripts).values({ recordingId: recording.id, text, words: wordsOf(text), audioSeconds: 4 });
+    await db.insert(assessments).values({
+      recordingId: recording.id,
+      status: "done",
+      startedAt: new Date(Date.now() - 60_000),
+      completedAt: new Date(),
+      scoringVersion: 1,
+      pronunciationScore: 1,
+      fillerRateScore: 1,
+      paceScore: 1,
+    });
+    return recording;
+  }
+
+  it("requires sign-in", async () => {
+    expect(await redirectedTo(() => assessRecording(form({})))).toBe("/login");
+  });
+
+  it("re-assesses a done recording from its stored transcript, without calling Deepgram", async () => {
+    const user = await signIn();
+    await saveTestKeys(user.id);
+    const recording = await assessedRecording(user.id);
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+
+    await assessRecording(form({ recordingId: recording.id }));
+    await afterSettled();
+
+    expect(after).toHaveBeenCalledTimes(1);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(stream).toHaveBeenCalledTimes(1);
+    const row = await assessmentOf(recording.id);
+    expect(row).toMatchObject({ status: "done", error: null, scoringVersion: 3, structureScore: 200 });
+    expect(row.pronunciationScore).toBe(150); // every word heard clearly, no longer the old 1
+    expect(row.result?.judged?.overview).toBe("A clear answer that could open more strongly.");
+    expect(refresh).toHaveBeenCalled();
+  });
+
+  it("doesn't re-assess another speaker's recording", async () => {
+    const other = await createUser();
+    await saveTestKeys(other.id);
+    const recording = await assessedRecording(other.id);
+    await signIn();
+
+    await assessRecording(form({ recordingId: recording.id }));
+
+    expect(after).not.toHaveBeenCalled();
+    expect(await assessmentOf(recording.id)).toMatchObject({ status: "done", scoringVersion: 1 });
   });
 });
 
