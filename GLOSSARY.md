@@ -23,6 +23,9 @@ Whether a recording captures video and audio or audio only.
 A new recording of a topic the speaker has already recorded, started from the previous recording's results.
 _Avoid_: Retry (that means re-running a failed assessment)
 
+**Previous attempt**:
+The speaker's most recent earlier recording of the same topic that has a score, which a retake's results are compared with.
+
 ## Assessment
 
 **Assessment**:

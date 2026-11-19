@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSetup, recordingMode, setupHref } from "./practice";
+import { parseSetup, practiceAgainHref, recordingMode, setupHref } from "./practice";
 
 const topicId = "6f1c2a4e-8b1d-4c3a-9e2f-1a2b3c4d5e6f";
 
@@ -58,5 +58,37 @@ describe("recordingMode", () => {
     ["video/mp4;codecs=avc1", "video"],
   ])("treats %s as %s", (mimeType, expected) => {
     expect(recordingMode(mimeType)).toBe(expected);
+  });
+});
+
+describe("practiceAgainHref", () => {
+  const recording = { topicId, durationSeconds: 100, mimeType: "audio/webm" };
+
+  it("links to setup with the recording's topic, its duration as the speaking time and its mode", () => {
+    expect(practiceAgainHref(recording)).toBe(`/practice?topic=${topicId}&speak=90&mode=audio`);
+  });
+
+  it.each([
+    [44, 30],
+    [45, 60],
+    [134, 120],
+    [136, 150],
+  ])("rounds a duration of %is to the nearest 30 seconds, giving %i", (durationSeconds, expected) => {
+    const url = new URL(practiceAgainHref({ ...recording, durationSeconds }), "http://localhost");
+    expect(url.searchParams.get("speak")).toBe(String(expected));
+  });
+
+  it.each([
+    [0, 10],
+    [5, 10],
+    [7200, 3600],
+  ])("brings a duration of %is within the limits as %i", (durationSeconds, expected) => {
+    const url = new URL(practiceAgainHref({ ...recording, durationSeconds }), "http://localhost");
+    expect(url.searchParams.get("speak")).toBe(String(expected));
+  });
+
+  it("takes video mode from a video recording", () => {
+    const url = new URL(practiceAgainHref({ ...recording, mimeType: "video/mp4" }), "http://localhost");
+    expect(url.searchParams.get("mode")).toBe("video");
   });
 });

@@ -25,6 +25,7 @@
   --accent: var(--indigo);
   --accent-hover: #3d1ba3;
   --accent-text: #ffffff;
+  --positive: #1d7a4f;
   --danger: #c93b45;
   --danger-soft: #fdecee;
   --backdrop: rgb(43 11 125 / 0.35);
@@ -69,6 +70,7 @@
     --accent: var(--lavender);
     --accent-hover: #b39dff;
     --accent-text: var(--indigo);
+    --positive: #4ccb92;
     --danger: #ff7a84;
     --danger-soft: #3d1c26;
     --backdrop: rgb(5 2 15 / 0.6);
@@ -640,7 +642,7 @@ audio {
 .dimension-card {
   display: grid;
   grid-template-columns: 1fr auto;
-  grid-template-areas: "icon chevron" "name name" "score score";
+  grid-template-areas: "icon chevron" "name name" "score change";
   gap: 0.35rem;
   width: 100%;
   height: 100%;
@@ -689,6 +691,36 @@ audio {
 
 .dimension-card .score strong {
   font-size: 2rem;
+}
+
+.dimension-card .score-change {
+  grid-area: change;
+  align-self: center;
+  font-size: 0.9rem;
+}
+
+/* A score's change since the previous attempt at the topic. */
+.score-change {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.score-change.up {
+  color: var(--positive);
+}
+
+.score-change.down {
+  color: var(--danger);
+}
+
+.score-change.same {
+  color: var(--muted);
+}
+
+.previous-attempt {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 /* The dimension drawer: slides in from the right, full screen on narrow viewports. */

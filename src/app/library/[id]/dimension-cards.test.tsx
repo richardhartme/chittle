@@ -88,6 +88,33 @@ describe("DimensionCards", () => {
     expect(card(/^Pace/)).toHaveTextContent("89/100");
   });
 
+  it("shows each dimension's change since the previous attempt", () => {
+    const previousScores = { ...scores, structure: 190, confidence: 92, pace: null };
+    render(
+      <DimensionCards
+        scores={scores}
+        previousScores={previousScores}
+        measured={measured}
+        judged={judged}
+        durationSeconds={65}
+      />,
+    );
+
+    expect(card(/^Structure/)).toHaveAccessibleName(/205\/250 \+15 since your previous attempt$/);
+    expect(card(/^Confidence/)).toHaveAccessibleName(/80\/150 −12 since your previous attempt$/);
+    expect(card(/^Conciseness/)).toHaveAccessibleName(/120\/200 ±0 since your previous attempt$/);
+    // The previous attempt had no Pace score to compare with.
+    expect(card(/^Pace/)).not.toHaveAccessibleName(/previous attempt/);
+  });
+
+  it("shows no changes for a first attempt", () => {
+    renderCards();
+
+    for (const button of screen.getAllByRole("button", { name: /\d\/\d/ })) {
+      expect(button).not.toHaveAccessibleName(/previous attempt/);
+    }
+  });
+
   it("opens a drawer from a card with that dimension's summary and sub-scores", async () => {
     renderCards();
 

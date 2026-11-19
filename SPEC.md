@@ -96,7 +96,7 @@ Structure is judged against the category's framework. Uptalk isn't scored (it ne
 ### Results page (`/library/[id]`)
 - Player, score composition bar (each dimension's share of 1000), six dimension cards, overview, strengths, areas to improve, and the transcript as plain text.
 - Clicking a dimension card opens a drawer (native `<dialog>`) with its sub-scores, "View feedback" toggles, statistics and charts. A "Coach insights" button opens a drawer with the coach insights and the ideal version.
-- **Practice again** opens setup with the same topic, speaking time and mode filled in. When a topic has earlier recordings, the results show the previous attempt's score for comparison.
+- **Practise again** opens setup with the same topic, speaking time and mode filled in. When the speaker has an earlier assessed recording of the topic, the results show its score and the change beside the total (linking to it), and each dimension card shows its change. A Home button sits beside it.
 - Re-assess, Retry or Assess as described above, and Delete.
 
 ### Dashboard (signed-in home, `/`)
@@ -174,7 +174,7 @@ The local-disk implementation writes under a configurable directory outside the 
 
 - `/login`, `/auth/verify` — magic link request and consumption
 - `/` — landing page when signed out; dashboard when signed in
-- `/practice` — setup: category, topic, speaking time and mode. Reads `topic`, `speak` and `mode` from the query to prefill when coming back from the record page or from Practice again.
+- `/practice` — setup: category, topic, speaking time and mode. Reads `topic`, `speak` and `mode` from the query to prefill when coming back from the record page or from Practise again.
 - `/practice/record?topic=<id>&speak=<seconds>&mode=video|audio` — device access, preview or level meter, recording and upload. Redirects to `/practice` if the topic is missing or unknown; the speaking time is clamped to 10–3600 seconds and the mode defaults to video.
 - `/library` — list of recordings; `/library/[id]` — results page
 - `/account` — provider keys and account deletion

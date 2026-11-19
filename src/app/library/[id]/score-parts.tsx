@@ -16,3 +16,21 @@ export function Bar({ value, max }: { value: number; max: number }) {
     </span>
   );
 }
+
+export type ChangeDirection = "up" | "down" | "same";
+
+export function changeDirection(change: number): ChangeDirection {
+  return change > 0 ? "up" : change < 0 ? "down" : "same";
+}
+
+const SIGNS: Record<ChangeDirection, string> = { up: "+", down: "−", same: "±" };
+
+/** A change in score with its sign, such as "+81", "−12" or "±0". */
+export function formatChange(change: number): string {
+  return `${SIGNS[changeDirection(change)]}${Math.abs(change)}`;
+}
+
+/** A score's change since the previous attempt, coloured up or down. */
+export function ScoreChange({ change, children }: { change: number; children: React.ReactNode }) {
+  return <span className={`score-change ${changeDirection(change)}`}>{children}</span>;
+}
