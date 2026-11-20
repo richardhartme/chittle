@@ -11,9 +11,11 @@ export function DeleteForm({ recordingId }: { recordingId: string }) {
   }
 
   return (
-    <form action={deleteRecording} onSubmit={onSubmit}>
-      <input type="hidden" name="recordingId" value={recordingId} />
-      <button className="danger">Delete recording</button>
-    </form>
+    <section className="card" aria-label="Delete recording">
+      <form action={deleteRecording} onSubmit={onSubmit}>
+        <input type="hidden" name="recordingId" value={recordingId} />
+        <button className="danger">Delete recording</button>
+      </form>
+    </section>
   );
 }

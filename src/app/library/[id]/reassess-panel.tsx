@@ -5,7 +5,7 @@ import { assessRecording } from "@/app/actions";
 import { SCORING_VERSION } from "@/lib/assessment/version";
 
 /**
- * The foot of a done assessment: labels one made with an older scoring version (or none recorded),
+ * Near the foot of a recording's page, above Delete, once its assessment is done: labels one made with an older scoring version (or none recorded),
  * since re-assessing it adds newer features, and offers Re-assess behind an inline confirmation that
  * explains the cost.
  */

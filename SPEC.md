@@ -96,8 +96,8 @@ Structure is judged against the category's framework. Uptalk isn't scored (it ne
 ### Results page (`/library/[id]`)
 - Player (video uses the browser's controls; audio has the app's own: play/pause, a seek bar with the time, mute and volume, which phones leave to their own buttons), coach insights card, score composition bar (each dimension's share of 1000), six dimension cards, overview, strengths, areas to improve, and the transcript as plain text.
 - Clicking a dimension card opens a drawer (native `<dialog>`) with its sub-scores, "View feedback" toggles, statistics and charts. A "Coach insights" card above the score shows the summary (or, for assessments from before it, the suggested opening) and opens a drawer with the coach insights and the ideal version.
-- **Practise again** opens setup with the same topic, speaking time and mode filled in. When the speaker has an earlier assessed recording of the topic, the results show its score and the change beside the total (linking to it), and each dimension card shows its change. A Home button sits beside it.
-- Re-assess, Retry or Assess as described above, and Delete.
+- When the speaker has an earlier assessed recording of the topic, the results show its score and the change beside the total (linking to it), and each dimension card shows its change.
+- Retry or Assess as described above. Once assessed, Re-assess sits at the foot of the page, above Delete, each in its own card.
 
 ### Dashboard (signed-in home, `/`)
 - Average score and a stacked bar chart of recent scores by dimension, filterable by dimension (all, or one) and range (last 7, last 30 or all practices).
@@ -181,7 +181,7 @@ The local-disk implementation writes under a configurable directory outside the 
 
 - `/login`, `/auth/verify` — magic link request and consumption
 - `/` — landing page when signed out; dashboard when signed in
-- `/practice` — setup: category, topic, speaking time and mode. Reads `topic`, `speak` and `mode` from the query to prefill when coming back from the record page or from Practise again.
+- `/practice` — setup: category, topic, speaking time and mode. Reads `topic`, `speak` and `mode` from the query to prefill when coming back from the record page.
 - `/practice/record?topic=<id>&speak=<seconds>&mode=video|audio` — device access, preview or level meter, recording and upload. Redirects to `/practice` if the topic is missing or unknown; the speaking time is clamped to 10–3600 seconds and the mode defaults to video.
 - `/library` — list of recordings; `/library/[id]` — results page
 - `/account` — provider keys and account deletion

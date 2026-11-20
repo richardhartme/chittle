@@ -18,7 +18,7 @@ import { requireUser } from "@/lib/auth/session";
 import { focusVotesOn } from "@/lib/focus-votes";
 import { hasProviderKeys } from "@/lib/provider-keys";
 import { formatDate, formatDuration } from "@/lib/format";
-import { practiceAgainHref, recordingMode } from "@/lib/practice";
+import { recordingMode } from "@/lib/practice";
 import { AssessmentPoller } from "./assessment-poller";
 import { AudioPlayer } from "./audio-player";
 import { CoachInsightsCard } from "./coach-insights";
@@ -41,12 +41,20 @@ async function Recording({ params }: Pick<PageProps<"/library/[id]">, "params">)
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) notFound();
 
-  const [row] = await db
-    .select({ recording: recordings, topic: topics.text, assessment: assessmentStateColumns })
-    .from(recordings)
-    .innerJoin(topics, eq(topics.id, recordings.topicId))
-    .leftJoin(assessments, eq(assessments.recordingId, recordings.id))
-    .where(and(eq(recordings.id, id), eq(recordings.userId, user.id)));
+  const [[row], canAssess] = await Promise.all([
+    db
+      .select({
+        recording: recordings,
+        topic: topics.text,
+        assessment: assessmentStateColumns,
+        scoringVersion: assessments.scoringVersion,
+      })
+      .from(recordings)
+      .innerJoin(topics, eq(topics.id, recordings.topicId))
+      .leftJoin(assessments, eq(assessments.recordingId, recordings.id))
+      .where(and(eq(recordings.id, id), eq(recordings.userId, user.id))),
+    hasProviderKeys(user.id),
+  ]);
   if (!row) notFound();
 
   const { recording, topic } = row;
@@ -70,23 +78,25 @@ async function Recording({ params }: Pick<PageProps<"/library/[id]">, "params">)
         <video controls preload="metadata" src={src} />
       )}
 
-      <AssessmentPanel recording={recording} assessment={assessment} />
+      <AssessmentPanel recording={recording} assessment={assessment} canAssess={canAssess} />
 
-      <p className="row">
-        <Link className="button primary" href={practiceAgainHref(recording)}>
-          Practise again
-        </Link>
-        <Link className="button" href="/">
-          Home
-        </Link>
-      </p>
-
+      {assessment.status === "done" && (
+        <ReassessPanel recordingId={recording.id} scoringVersion={row.scoringVersion} canReassess={canAssess} />
+      )}
       <DeleteForm recordingId={recording.id} />
     </div>
   );
 }
 
-async function AssessmentPanel({ recording, assessment }: { recording: Recording; assessment: AssessmentState }) {
+async function AssessmentPanel({
+  recording,
+  assessment,
+  canAssess,
+}: {
+  recording: Recording;
+  assessment: AssessmentState;
+  canAssess: boolean;
+}) {
   const { id: recordingId, userId, durationSeconds } = recording;
   if (assessment.status === "pending") {
     return (
@@ -105,14 +115,12 @@ async function AssessmentPanel({ recording, assessment }: { recording: Recording
         total: assessments.totalScore,
         scores: dimensionScoreColumns,
         result: assessments.result,
-        scoringVersion: assessments.scoringVersion,
       })
       .from(assessments)
       .leftJoin(transcripts, eq(transcripts.recordingId, assessments.recordingId))
       .where(eq(assessments.recordingId, recordingId));
     const judged = row?.result?.judged;
-    const [canReassess, previous, focusVotes] = await Promise.all([
-      hasProviderKeys(userId),
+    const [previous, focusVotes] = await Promise.all([
       previousAttempt(recording),
       focusVotesOn(userId, recordingId),
     ]);
@@ -120,7 +128,6 @@ async function AssessmentPanel({ recording, assessment }: { recording: Recording
     const compared = judged && row.total !== null ? previous : null;
     return (
       <>
-        <ReassessPanel recordingId={recordingId} scoringVersion={row?.scoringVersion ?? null} canReassess={canReassess} />
         <CoachInsightsCard insights={judged?.coachInsights} />
         {/* Assessments from before judging was added have no total or feedback. */}
         {judged && row.total !== null && (
@@ -159,7 +166,6 @@ async function AssessmentPanel({ recording, assessment }: { recording: Recording
       <Link href="/account">Add your provider keys to get feedback</Link>
     </p>
   );
-  const canAssess = await hasProviderKeys(userId);
   const startButton = (label: string) => (
     <form action={assessRecording}>
       <input type="hidden" name="recordingId" value={recordingId} />
