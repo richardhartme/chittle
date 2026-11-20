@@ -54,7 +54,7 @@ afterEach(() => {
 const continueButton = () => screen.getByRole("button", { name: "Continue" });
 
 async function getTopic(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole("button", { name: "Get a topic" }));
+  await user.click(screen.getByRole("button", { name: "Get a random topic" }));
   await screen.findByText(topicOne.text, { selector: "p" });
 }
 
@@ -113,9 +113,9 @@ describe("the setup page", () => {
 });
 
 describe("choosing a topic", () => {
-  it("starts with Continue disabled and a prompt to pick a category", () => {
+  it("starts with Continue disabled and a prompt to pick a topic", () => {
     render(<SetupForm categories={categories} />);
-    expect(screen.getByText(/Choose a category and get a topic/)).toBeInTheDocument();
+    expect(screen.getByText(/Choose a topic from the list, or get a random one/)).toBeInTheDocument();
     expect(continueButton()).toBeDisabled();
   });
 
@@ -123,7 +123,7 @@ describe("choosing a topic", () => {
     const user = userEvent.setup();
     render(<SetupForm categories={categories} />);
 
-    await user.click(screen.getByRole("button", { name: "Get a topic" }));
+    await user.click(screen.getByRole("button", { name: "Get a random topic" }));
 
     expect(await screen.findByText(topicOne.text, { selector: "p" })).toBeInTheDocument();
     const [, init] = nextCall();
@@ -148,7 +148,7 @@ describe("choosing a topic", () => {
   it("lists the category's existing topics and lets the user pick one", async () => {
     const user = userEvent.setup();
     render(<SetupForm categories={categories} />);
-    const picker = await screen.findByLabelText("Or choose an existing topic");
+    const picker = await screen.findByLabelText("Topic");
     expect(Array.from((picker as HTMLSelectElement).options).map((o) => o.text)).toEqual([
       "Choose a topic…",
       topicOne.text,
@@ -167,13 +167,13 @@ describe("choosing a topic", () => {
     handlers.topics = () => json({ topics: [] });
     const { unmount } = render(<SetupForm categories={categories} />);
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    expect(screen.queryByLabelText("Or choose an existing topic")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Topic")).not.toBeInTheDocument();
     unmount();
 
     handlers.topics = () => json({ error: "boom" }, 500);
     render(<SetupForm categories={categories} />);
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-    expect(screen.queryByLabelText("Or choose an existing topic")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Topic")).not.toBeInTheDocument();
   });
 
   it("reloads the topic list after a roll, since new topics may have been generated", async () => {
@@ -181,7 +181,7 @@ describe("choosing a topic", () => {
     render(<SetupForm categories={categories} />);
     await waitFor(() => expect(fetchMock.mock.calls.filter(([u]) => u === "/api/topics?category=a")).toHaveLength(1));
 
-    await user.click(screen.getByRole("button", { name: "Get a topic" }));
+    await user.click(screen.getByRole("button", { name: "Get a random topic" }));
 
     await waitFor(() => expect(fetchMock.mock.calls.filter(([u]) => u === "/api/topics?category=a")).toHaveLength(2));
   });
@@ -191,7 +191,7 @@ describe("choosing a topic", () => {
     const user = userEvent.setup();
     render(<SetupForm categories={categories} />);
 
-    await user.click(screen.getByRole("button", { name: "Get a topic" }));
+    await user.click(screen.getByRole("button", { name: "Get a random topic" }));
 
     expect(await screen.findByText("You've seen every topic in this category.")).toBeInTheDocument();
     expect(continueButton()).toBeDisabled();
@@ -204,7 +204,7 @@ describe("choosing a topic", () => {
     const user = userEvent.setup();
     render(<SetupForm categories={categories} />);
 
-    await user.click(screen.getByRole("button", { name: "Get a topic" }));
+    await user.click(screen.getByRole("button", { name: "Get a random topic" }));
 
     expect(await screen.findByText(/Check your connection and try again/)).toBeInTheDocument();
   });

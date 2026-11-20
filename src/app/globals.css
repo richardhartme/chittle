@@ -501,6 +501,29 @@ video {
   }
 }
 
+/* Setup page: the category and topic share a row, with the topic taking the rest of it. */
+
+.topic-pickers {
+  align-items: flex-start;
+}
+
+.topic-picker {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+.topic-picker select {
+  width: 100%;
+  text-overflow: ellipsis;
+}
+
+.setup-options {
+  align-items: flex-start;
+  gap: 1rem 2.5rem;
+  padding-top: 1.1rem;
+  border-top: 1.5px solid var(--border);
+}
+
 /* Mode choice on the setup page */
 
 .choices {

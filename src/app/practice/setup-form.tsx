@@ -104,7 +104,8 @@ export function SetupForm({ categories, initial = {} }: Props) {
 
   return (
     <div className="card stack">
-      <div className="row">
+      {/* What to speak about: the category, then a topic from it or a random one. */}
+      <div className="row topic-pickers">
         <label>
           Category
           <select
@@ -118,6 +119,41 @@ export function SetupForm({ categories, initial = {} }: Props) {
             ))}
           </select>
         </label>
+        {categoryTopics.length > 0 && (
+          <label className="topic-picker">
+            Topic
+            <select
+              value={topic?.id ?? ""}
+              disabled={loadingTopic}
+              onChange={(event) => event.target.value && fetchTopic(event.target.value)}
+            >
+              <option value="" disabled>
+                Choose a topic…
+              </option>
+              {categoryTopics.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.text}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+      </div>
+      <div className="row">
+        <button onClick={() => fetchTopic()} disabled={loadingTopic || !category}>
+          {loadingTopic ? "Finding a topic…" : topic ? "Get another topic" : "Get a random topic"}
+        </button>
+      </div>
+
+      {topic ? (
+        <p className="topic">{topic.text}</p>
+      ) : (
+        <p className="muted">Choose a topic from the list, or get a random one.</p>
+      )}
+      {topicError && <p className="error">{topicError}</p>}
+
+      {/* How to record it. */}
+      <div className="row setup-options">
         <label>
           Speaking time (seconds)
           <input
@@ -128,55 +164,24 @@ export function SetupForm({ categories, initial = {} }: Props) {
             onChange={(event) => setSpeakSeconds(clampSpeakSeconds(event.target.valueAsNumber))}
           />
         </label>
+        <fieldset className="choices">
+          <legend>Record</legend>
+          {MODE_OPTIONS.map((option) => (
+            <label key={option.value} className="choice">
+              <input
+                type="radio"
+                name="mode"
+                value={option.value}
+                checked={mode === option.value}
+                onChange={() => (setChosenMode(option.value), storeMode(option.value))}
+              />
+              {option.label}
+            </label>
+          ))}
+        </fieldset>
       </div>
 
-      <fieldset className="choices">
-        <legend>Record</legend>
-        {MODE_OPTIONS.map((option) => (
-          <label key={option.value} className="choice">
-            <input
-              type="radio"
-              name="mode"
-              value={option.value}
-              checked={mode === option.value}
-              onChange={() => (setChosenMode(option.value), storeMode(option.value))}
-            />
-            {option.label}
-          </label>
-        ))}
-      </fieldset>
-
-      {topic ? (
-        <p className="topic">{topic.text}</p>
-      ) : (
-        <p className="muted">Choose a category and get a topic to speak about.</p>
-      )}
-      {topicError && <p className="error">{topicError}</p>}
-
-      {categoryTopics.length > 0 && (
-        <label>
-          Or choose an existing topic
-          <select
-            value={topic?.id ?? ""}
-            disabled={loadingTopic}
-            onChange={(event) => event.target.value && fetchTopic(event.target.value)}
-          >
-            <option value="" disabled>
-              Choose a topic…
-            </option>
-            {categoryTopics.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.text}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
-
       <div className="row">
-        <button onClick={() => fetchTopic()} disabled={loadingTopic || !category}>
-          {loadingTopic ? "Finding a topic…" : topic ? "Get another topic" : "Get a topic"}
-        </button>
         <button className="primary" onClick={continueToRecord} disabled={!topic || loadingTopic}>
           Continue
         </button>
