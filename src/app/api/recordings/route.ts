@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
-import { recordings, topics } from "@/db/schema";
+import { recordings } from "@/db/schema";
 import { startAssessment } from "@/lib/assessment";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getStorage } from "@/lib/storage";
+import { findTopic } from "@/lib/topics/next-topic";
 
 const querySchema = z.object({
   topicId: z.uuid(),
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
   }
   if (!request.body) return Response.json({ error: "The upload was empty." }, { status: 400 });
 
-  const [topic] = await db.select({ id: topics.id }).from(topics).where(eq(topics.id, query.data.topicId));
+  const topic = await findTopic(user.id, query.data.topicId);
   if (!topic) return Response.json({ error: "That topic doesn't exist." }, { status: 400 });
 
   const id = randomUUID();

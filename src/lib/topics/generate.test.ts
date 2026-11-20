@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { topics } from "@/db/schema";
-import { createCategory, createTopic, db, resetDb } from "@/test/db";
+import { createCategory, createCustomTopic, createTopic, createUser, db, resetDb } from "@/test/db";
 
 vi.mock("@/db", async () => ({ db: (await import("@/test/db")).db }));
 
@@ -87,6 +87,26 @@ describe("generateTopics", () => {
     const prompt = create.mock.calls[0][0].messages[0].content;
     expect(prompt).not.toContain("Other category topic");
     expect(prompt).not.toContain("Do not repeat");
+  });
+
+  it("never shows the model anyone's custom topics", async () => {
+    const category = await createCategory("a");
+    await createCustomTopic((await createUser()).id, category.id, "Something private");
+    create.mockResolvedValue(reply('["Something new entirely."]'));
+
+    await generateTopics(category);
+
+    const prompt = create.mock.calls[0][0].messages[0].content;
+    expect(prompt).not.toContain("Something private");
+    expect(prompt).not.toContain("Do not repeat");
+  });
+
+  it("can add a shared topic with the same text as a custom one", async () => {
+    const category = await createCategory("a");
+    await createCustomTopic((await createUser()).id, category.id, "Same words");
+    create.mockResolvedValue(reply('["Same words"]'));
+
+    expect(await generateTopics(category)).toBe(1);
   });
 
   it("skips duplicates of existing topics and counts only new rows", async () => {

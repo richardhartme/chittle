@@ -12,6 +12,10 @@ _Avoid_: Type, mode
 A single question or prompt to speak about, belonging to one category.
 _Avoid_: Prompt, question
 
+**Custom topic**:
+A topic a speaker writes for themselves, private to them. It belongs to the category they chose and is judged against its framework.
+_Avoid_: Own topic, personal topic
+
 **Recording**:
 One take of a speaker answering a topic, on video and audio or audio only.
 _Avoid_: Video, take, session

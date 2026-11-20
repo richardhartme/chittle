@@ -1,12 +1,13 @@
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { userSeenTopics } from "@/db/schema";
-import { createCategory, createTopic, createUser, db, resetDb } from "@/test/db";
+import { topics, userSeenTopics } from "@/db/schema";
+import { createCategory, createCustomTopic, createTopic, createUser, db, resetDb } from "@/test/db";
 
 vi.mock("@/db", async () => ({ db: (await import("@/test/db")).db }));
 vi.mock("./generate", () => ({ canGenerateTopics: vi.fn(() => false), generateTopics: vi.fn() }));
 
 import { canGenerateTopics, generateTopics } from "./generate";
-import { categoryTopics, chooseTopic, nextTopic } from "./next-topic";
+import { categoryTopics, chooseTopic, createCustomTopic as writeTopic, findTopic, nextTopic } from "./next-topic";
 
 beforeEach(async () => {
   await resetDb();
@@ -80,6 +81,16 @@ describe("nextTopic", () => {
     expect(generated.map((t) => t.id)).toContain(third!.id);
   });
 
+  it("never serves a custom topic, the user's own or anyone else's", async () => {
+    const user = await createUser();
+    const other = await createUser();
+    const category = await createCategory("a");
+    await createCustomTopic(user.id, category.id, "Mine");
+    await createCustomTopic(other.id, category.id, "Theirs");
+
+    expect(await nextTopic(user.id, "a")).toBeNull();
+  });
+
   describe("when topics run out", () => {
     it("does not generate if generation is unavailable", async () => {
       const user = await createUser();
@@ -138,21 +149,51 @@ describe("nextTopic", () => {
 });
 
 describe("categoryTopics", () => {
-  it("lists only the category's topics, sorted by text", async () => {
+  it("lists only the category's shared topics, sorted by text", async () => {
+    const user = await createUser();
     const category = await createCategory("a");
     const other = await createCategory("b");
     await createTopic(category.id, "Banana");
     await createTopic(category.id, "Apple");
     await createTopic(other.id, "Cherry");
 
-    const result = await categoryTopics("a");
+    const result = await categoryTopics(user.id, "a");
 
-    expect(result.map((t) => t.text)).toEqual(["Apple", "Banana"]);
-    expect(Object.keys(result[0]).sort()).toEqual(["id", "text"]);
+    expect(result.topics.map((t) => t.text)).toEqual(["Apple", "Banana"]);
+    expect(Object.keys(result.topics[0]).sort()).toEqual(["id", "text"]);
+    expect(result.customTopics).toEqual([]);
   });
 
-  it("returns an empty list for an unknown category", async () => {
-    expect(await categoryTopics("nope")).toEqual([]);
+  it("lists the user's custom topics in the category separately, newest first", async () => {
+    const user = await createUser();
+    const category = await createCategory("a");
+    const other = await createCategory("b");
+    const older = await createCustomTopic(user.id, category.id, "Older");
+    await db.update(topics).set({ createdAt: new Date("2026-01-01") }).where(eq(topics.id, older.id));
+    const newer = await createCustomTopic(user.id, category.id, "Newer");
+    await createCustomTopic(user.id, other.id, "Other category");
+    await createTopic(category.id, "Shared");
+
+    const result = await categoryTopics(user.id, "a");
+
+    expect(result.customTopics).toEqual([
+      { id: newer.id, text: "Newer" },
+      { id: older.id, text: "Older" },
+    ]);
+    expect(result.topics.map((t) => t.text)).toEqual(["Shared"]);
+  });
+
+  it("leaves out other users' custom topics", async () => {
+    const user = await createUser();
+    const category = await createCategory("a");
+    await createCustomTopic((await createUser()).id, category.id, "Theirs");
+
+    expect(await categoryTopics(user.id, "a")).toEqual({ topics: [], customTopics: [] });
+  });
+
+  it("returns empty lists for an unknown category", async () => {
+    const user = await createUser();
+    expect(await categoryTopics(user.id, "nope")).toEqual({ topics: [], customTopics: [] });
   });
 
   it("includes topics the user has already seen", async () => {
@@ -161,7 +202,7 @@ describe("categoryTopics", () => {
     await createTopic(category.id, "seen");
     await nextTopic(user.id, "a");
 
-    expect(await categoryTopics("a")).toHaveLength(1);
+    expect((await categoryTopics(user.id, "a")).topics).toHaveLength(1);
   });
 });
 
@@ -214,5 +255,86 @@ describe("chooseTopic", () => {
 
     expect(await chooseTopic(user.id, "a", "00000000-0000-4000-8000-000000000000")).toBeNull();
     expect(await chooseTopic(user.id, "nope", topic.id)).toBeNull();
+  });
+});
+
+describe("choosing a custom topic", () => {
+  it("returns the user's own custom topic", async () => {
+    const user = await createUser();
+    const category = await createCategory("a");
+    const topic = await createCustomTopic(user.id, category.id, "Mine");
+
+    expect((await chooseTopic(user.id, "a", topic.id))?.id).toBe(topic.id);
+  });
+
+  it("returns null for another user's custom topic", async () => {
+    const user = await createUser();
+    const category = await createCategory("a");
+    const topic = await createCustomTopic((await createUser()).id, category.id, "Theirs");
+
+    expect(await chooseTopic(user.id, "a", topic.id)).toBeNull();
+    expect(await seenBy()).toEqual([]);
+  });
+});
+
+describe("createCustomTopic", () => {
+  it("saves a custom topic owned by the user in the category", async () => {
+    const user = await createUser();
+    const category = await createCategory("a");
+
+    const topic = await writeTopic(user.id, "a", "Describe a time you changed your mind");
+
+    expect(topic).toEqual(
+      expect.objectContaining({
+        categoryId: category.id,
+        text: "Describe a time you changed your mind",
+        source: "custom",
+        userId: user.id,
+      }),
+    );
+  });
+
+  it("makes a new topic each time, even when the text matches an existing one", async () => {
+    const user = await createUser();
+    const category = await createCategory("a");
+    const shared = await createTopic(category.id, "Same words");
+
+    const first = await writeTopic(user.id, "a", "Same words");
+    const second = await writeTopic(user.id, "a", "Same words");
+
+    expect(new Set([shared.id, first!.id, second!.id]).size).toBe(3);
+  });
+
+  it("returns null for an unknown category", async () => {
+    const user = await createUser();
+    expect(await writeTopic(user.id, "nope", "A topic")).toBeNull();
+    expect(await db.select().from(topics)).toEqual([]);
+  });
+});
+
+describe("findTopic", () => {
+  it("finds a shared topic with its category", async () => {
+    const user = await createUser();
+    const category = await createCategory("a");
+    const topic = await createTopic(category.id, "Shared");
+
+    expect(await findTopic(user.id, topic.id)).toEqual({ id: topic.id, text: "Shared", category: "a" });
+  });
+
+  it("finds the user's own custom topic", async () => {
+    const user = await createUser();
+    const category = await createCategory("a");
+    const topic = await createCustomTopic(user.id, category.id, "Mine");
+
+    expect(await findTopic(user.id, topic.id)).toEqual({ id: topic.id, text: "Mine", category: "a" });
+  });
+
+  it("returns null for another user's custom topic or an unknown id", async () => {
+    const user = await createUser();
+    const category = await createCategory("a");
+    const theirs = await createCustomTopic((await createUser()).id, category.id, "Theirs");
+
+    expect(await findTopic(user.id, theirs.id)).toBeNull();
+    expect(await findTopic(user.id, "00000000-0000-4000-8000-000000000000")).toBeNull();
   });
 });

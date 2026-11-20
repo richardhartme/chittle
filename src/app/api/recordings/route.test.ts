@@ -1,10 +1,10 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { assessments, recordings, transcripts } from "@/db/schema";
+import { assessments, recordings, topics, transcripts } from "@/db/schema";
 import { SCORING_VERSION } from "@/lib/assessment/version";
 import { signIn } from "@/test/auth";
-import { createCategory, createTopic, db, resetDb } from "@/test/db";
+import { createCategory, createCustomTopic, createTopic, createUser, db, resetDb } from "@/test/db";
 import { saveTestKeys } from "@/test/keys";
 import { afterSettled, resetNextMocks } from "@/test/next";
 import { withTempStorage } from "@/test/storage";
@@ -170,6 +170,29 @@ describe("POST /api/recordings", () => {
     it("rejects an unknown topic before storing anything", async () => {
       await signIn();
       const res = await upload("x", { query: { topicId: "00000000-0000-4000-8000-000000000000" } });
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: "That topic doesn't exist." });
+      expect(await filesStored()).toHaveLength(0);
+    });
+
+    it("accepts the user's own custom topic", async () => {
+      const user = await signIn();
+      const [{ categoryId }] = await db.select().from(topics);
+      const custom = await createCustomTopic(user.id, categoryId, "Mine");
+
+      const res = await upload("x", { query: { topicId: custom.id } });
+
+      expect(res.status).toBe(201);
+      expect((await db.select().from(recordings))[0].topicId).toBe(custom.id);
+    });
+
+    it("rejects another user's custom topic as unknown, before storing anything", async () => {
+      await signIn();
+      const [{ categoryId }] = await db.select().from(topics);
+      const theirs = await createCustomTopic((await createUser()).id, categoryId, "Theirs");
+
+      const res = await upload("x", { query: { topicId: theirs.id } });
+
       expect(res.status).toBe(400);
       expect(await res.json()).toEqual({ error: "That topic doesn't exist." });
       expect(await filesStored()).toHaveLength(0);

@@ -12,7 +12,7 @@ General self-improvers and professionals (interview, presentation and public-spe
 
 1. User signs in with a magic link.
 2. User picks a **category** (e.g. Interview, Everyday, Opinion, Storytelling, Work).
-3. The app serves a random **topic** from that category. The user can ask for **another topic** as often as they like, with no cap.
+3. The app serves a random **topic** from that category. The user can ask for **another topic** as often as they like, with no cap, choose one from the category's list, or write a **custom topic** of their own.
 4. User sets their **speaking duration** and chooses to record **video and audio** or **audio only**, then continues to the record page. Setup never turns on the camera or microphone.
 5. The record page asks only for the devices the chosen mode needs and shows a camera preview or a microphone level meter. The user prepares for as long as they like, then presses **Start recording**.
 6. While recording, the speaking time counts down. At zero it flashes, then counts the overtime. It never stops the recording: the user stops when they've finished.
@@ -23,9 +23,18 @@ General self-improvers and professionals (interview, presentation and public-spe
 ## Features
 
 ### Topics
-- Two sources, both organised by category:
+- Three sources, all organised by category:
   - **Predefined** topics/questions, seeded into the database (e.g. Interview → "Tell me about yourself").
   - **AI-generated** topics, produced on demand by the Claude API (small, cheap model) using the **server's** API key.
+  - **Custom** topics, written by a user on the setup page. Predefined and generated topics are shared by everyone; a custom topic is private to the user who wrote it.
+- **Custom topics**:
+  - "Write your own topic" opens a field. The text is trimmed and must be 3–300 characters; nothing else checks it. "Use this topic" saves it in the chosen category straight away and selects it.
+  - Each one is judged against its category's framework, like any other topic.
+  - Every submission makes a new topic, even when the text matches an existing one.
+  - The setup page's Topic list shows the user's custom topics in the category first, newest first, under "Your topics", then the shared ones under "All topics".
+  - They're never served at random, and they're never shown to the topic generator.
+  - No other user can reach one: the topic list, choosing by id, the setup prefill, the record page and the upload all treat another user's custom topic as unknown.
+  - They can't be edited or deleted yet. Deleting the account deletes them.
 - Each user's **seen topics are tracked**; picking and generation exclude topics the user has already seen, so topics don't repeat.
 - Asking for another topic is unlimited. Each request may call the LLM, so cost grows with use. A cap can be added later.
 - Each category has a **framework** that answers are judged against:
@@ -163,7 +172,7 @@ Shape, Brevity and Conviction are shown under "What you said", and Clarity, Flue
 - `magic_links` — id, user_id/email, token_hash, expires_at, consumed_at
 - `sessions` — id, user_id, token_hash, expires_at
 - `categories` — id, slug, name, framework (`star` | `prep` | `story_arc` | `what_so_what_now_what`)
-- `topics` — id, category_id, text, source (`predefined` | `generated`), created_at; text unique per category
+- `topics` — id, category_id, text, source (`predefined` | `generated` | `custom`), user_id (the author of a custom topic, null otherwise), created_at; shared topics' text unique per category; a topic has a user_id exactly when it's custom
 - `user_seen_topics` — user_id, topic_id, seen_at (PK on both)
 - `recordings` — id, user_id, topic_id, storage_key, mime_type, size_bytes, duration_seconds, created_at
 - `provider_keys` — user_id, provider (`deepgram` | `anthropic`), encrypted_key, key_hint, updated_at (PK on user_id and provider)
@@ -197,12 +206,13 @@ The local-disk implementation writes under a configurable directory outside the 
 - `/account` — provider keys and account deletion
 - `POST /api/recordings` — upload (raw audio or video body, `topicId` and `durationSeconds` in the query string), then starts an assessment; `GET /api/recordings/[id]/file` — authenticated stream with byte-range support; `DELETE /api/recordings/[id]`
 - `GET /api/recordings/[id]/assessment` — the assessment's status, polled by the results page while pending
-- `POST /api/topics/next` — returns an unseen topic for a category (predefined first, then generated)
+- `GET /api/topics?category=<slug>` — the category's shared topics and the user's own custom topics, as separate lists; `POST /api/topics` — saves a custom topic (`category` and `text`)
+- `POST /api/topics/next` — returns an unseen shared topic for a category (predefined first, then generated), or the given `topicId` if the user can see it
 
 ### Topic selection
 
 1. Choose a random predefined topic in the category the user hasn't seen.
-2. If none remain, generate new topics with the Claude API (given the category and the user's/known existing topics to avoid duplicates), store them, and serve one.
+2. If none remain, generate new topics with the Claude API (given the category and its existing shared topics to avoid duplicates), store them, and serve one.
 3. Mark the served topic as seen for the user.
 
 ### Privacy

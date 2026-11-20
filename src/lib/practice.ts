@@ -11,6 +11,16 @@ type SearchParams = Record<string, string | string[] | undefined>;
 
 export const SPEAK_SECONDS = { min: 10, max: 3600, default: 120 } as const;
 
+/** How long a custom topic's text may be, after trimming. */
+export const CUSTOM_TOPIC_LENGTH = { min: 3, max: 300 } as const;
+
+/** A custom topic's text: trimmed, then held to `CUSTOM_TOPIC_LENGTH`. */
+export const customTopicText = z
+  .string()
+  .trim()
+  .min(CUSTOM_TOPIC_LENGTH.min, `Write a topic of at least ${CUSTOM_TOPIC_LENGTH.min} characters.`)
+  .max(CUSTOM_TOPIC_LENGTH.max, `Keep the topic to ${CUSTOM_TOPIC_LENGTH.max} characters or fewer.`);
+
 /** Rounds a speaking time and brings it within the allowed range. Not-a-number gives the minimum. */
 export function clampSpeakSeconds(value: number): number {
   if (Number.isNaN(value)) return SPEAK_SECONDS.min;

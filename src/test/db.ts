@@ -46,6 +46,12 @@ export async function createTopic(
   return topic;
 }
 
+/** A custom topic: written by `userId` and private to them. */
+export async function createCustomTopic(userId: string, categoryId: string, text = `Custom ${unique()}`) {
+  const [topic] = await db.insert(schema.topics).values({ categoryId, text, source: "custom", userId }).returning();
+  return topic;
+}
+
 export async function createRecording(
   userId: string,
   topicId: string,

@@ -3,10 +3,20 @@ import { stat } from "node:fs/promises";
 import path from "node:path";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { assessments, magicLinks, providerKeys, recordings, sessions, transcripts, userSeenTopics, users } from "@/db/schema";
+import {
+  assessments,
+  magicLinks,
+  providerKeys,
+  recordings,
+  sessions,
+  topics,
+  transcripts,
+  userSeenTopics,
+  users,
+} from "@/db/schema";
 import { hashToken } from "@/lib/auth/tokens";
 import { signIn } from "@/test/auth";
-import { createCategory, createRecording, createTopic, createUser, db, resetDb } from "@/test/db";
+import { createCategory, createCustomTopic, createRecording, createTopic, createUser, db, resetDb } from "@/test/db";
 import { claudeReplies, stream } from "@/test/claude";
 import { judgementFixture, wordsOf } from "@/test/judgement";
 import { saveTestKeys } from "@/test/keys";
@@ -376,6 +386,10 @@ describe("deleteAccount", () => {
     const recording = await createRecording(user.id, topicId);
     await temp.storage().put(recording.storageKey, streamOf("video"));
     await db.insert(userSeenTopics).values({ userId: user.id, topicId });
+    // A custom topic with a recording: the recording's foreign key restricts deleting the topic.
+    const [{ categoryId }] = await db.select().from(topics);
+    const custom = await createCustomTopic(user.id, categoryId, "Mine");
+    await createRecording(user.id, custom.id);
     await db
       .insert(providerKeys)
       .values({ userId: user.id, provider: "deepgram", encryptedKey: "ciphertext", keyHint: "abcd" });
@@ -387,6 +401,7 @@ describe("deleteAccount", () => {
     expect(await db.select().from(recordings)).toHaveLength(0);
     expect(await db.select().from(userSeenTopics)).toHaveLength(0);
     expect(await db.select().from(providerKeys)).toHaveLength(0);
+    expect((await db.select().from(topics)).map((t) => t.id)).toEqual([topicId]);
     await expect(stat(path.join(temp.root, user.id))).rejects.toThrow();
     expect(cookieJar.has("chittle_session")).toBe(false);
   });

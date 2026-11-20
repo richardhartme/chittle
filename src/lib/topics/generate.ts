@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { topics, type Category } from "@/db/schema";
 import { env } from "@/lib/env";
@@ -23,7 +23,8 @@ export async function generateTopics(category: Category): Promise<number> {
   const existing = await db
     .select({ text: topics.text })
     .from(topics)
-    .where(eq(topics.categoryId, category.id))
+    // Shared topics only: custom topics are private to their authors.
+    .where(and(eq(topics.categoryId, category.id), isNull(topics.userId)))
     .orderBy(desc(topics.createdAt))
     .limit(EXISTING_CONTEXT_LIMIT);
 

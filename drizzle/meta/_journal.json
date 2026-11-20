@@ -57,6 +57,13 @@
       "when": 1795083500193,
       "tag": "0007_progress_insights",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795190110252,
+      "tag": "0008_custom_topics",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,6 @@
+import { sql } from "drizzle-orm";
 import {
+  check,
   doublePrecision,
   index,
   integer,
@@ -9,6 +11,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import type { AssessmentResult } from "@/lib/assessment/result";
@@ -55,7 +58,9 @@ export const categories = pgTable("categories", {
   framework: framework("framework").notNull(),
 });
 
-export const topicSource = pgEnum("topic_source", ["predefined", "generated"]);
+// Predefined and generated topics are shared by everyone. A custom topic is written by one user and
+// only they can see it.
+export const topicSource = pgEnum("topic_source", ["predefined", "generated", "custom"]);
 
 export const topics = pgTable(
   "topics",
@@ -66,9 +71,17 @@ export const topics = pgTable(
       .references(() => categories.id, { onDelete: "cascade" }),
     text: text("text").notNull(),
     source: topicSource("source").notNull(),
+    // The author of a custom topic. Null for shared topics.
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
     createdAt: createdAt(),
   },
-  (t) => [unique("topics_category_text_unique").on(t.categoryId, t.text)],
+  (t) => [
+    // Shared topics are unique per category. Custom topics may repeat, even for the same user.
+    uniqueIndex("topics_category_text_unique").on(t.categoryId, t.text).where(sql`${t.userId} is null`),
+    index("topics_user_category_idx").on(t.userId, t.categoryId),
+    // Compared as text so the migration that adds 'custom' to the enum can also add this check.
+    check("topics_custom_has_owner", sql`(${t.source}::text = 'custom') = (${t.userId} is not null)`),
+  ],
 );
 
 export const userSeenTopics = pgTable(

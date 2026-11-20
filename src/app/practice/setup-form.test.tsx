@@ -15,12 +15,15 @@ const categories = [
 ];
 const topicOne = { id: "t1", text: "Describe your best day." };
 const topicTwo = { id: "t2", text: "Why do people travel?" };
+const customOne = { id: "c1", text: "Describe a time you changed your mind." };
+const customTwo = { id: "c2", text: "What would you teach a room of strangers?" };
 
 type FetchHandler = (url: string, init?: RequestInit) => Response | Promise<Response>;
-let handlers: { topics: FetchHandler; next: FetchHandler };
+let handlers: { topics: FetchHandler; next: FetchHandler; create: FetchHandler };
 const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
   const url = String(input);
   if (url.startsWith("/api/topics/next")) return Promise.resolve(handlers.next(url, init));
+  if (url === "/api/topics" && init?.method === "POST") return Promise.resolve(handlers.create(url, init));
   if (url.startsWith("/api/topics")) return Promise.resolve(handlers.topics(url, init));
   throw new Error(`Unexpected fetch ${url}`);
 });
@@ -29,6 +32,7 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
 const nextCall = () => fetchMock.mock.calls.find(([url]) => String(url) === "/api/topics/next")!;
+const createCall = () => fetchMock.mock.calls.find(([url, init]) => url === "/api/topics" && init?.method === "POST")!;
 
 const getUserMedia = vi.fn();
 
@@ -36,8 +40,9 @@ beforeEach(() => {
   push.mockReset();
   getUserMedia.mockReset();
   handlers = {
-    topics: () => json({ topics: [topicOne, topicTwo] }),
+    topics: () => json({ topics: [topicOne, topicTwo], customTopics: [] }),
     next: () => json({ topic: topicOne }),
+    create: () => json({ topic: customOne }, 201),
   };
   fetchMock.mockClear();
   vi.stubGlobal("fetch", fetchMock);
@@ -219,6 +224,157 @@ describe("choosing a topic", () => {
     expect(screen.queryByText(topicOne.text, { selector: "p" })).not.toBeInTheDocument();
     expect(continueButton()).toBeDisabled();
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/topics?category=b"));
+  });
+});
+
+describe("your own topics in the list", () => {
+  it("groups the user's custom topics first under 'Your topics', then the rest under 'All topics'", async () => {
+    handlers.topics = () => json({ topics: [topicOne], customTopics: [customTwo, customOne] });
+    render(<SetupForm categories={categories} />);
+
+    const picker = (await screen.findByLabelText("Topic")) as HTMLSelectElement;
+    const groups = Array.from(picker.querySelectorAll("optgroup")).map((g) => ({
+      label: g.label,
+      options: Array.from(g.querySelectorAll("option")).map((o) => o.text),
+    }));
+    expect(groups).toEqual([
+      { label: "Your topics", options: [customTwo.text, customOne.text] },
+      { label: "All topics", options: [topicOne.text] },
+    ]);
+  });
+
+  it("shows the list when the category has only the user's custom topics", async () => {
+    handlers.topics = () => json({ topics: [], customTopics: [customOne] });
+    render(<SetupForm categories={categories} />);
+
+    const picker = (await screen.findByLabelText("Topic")) as HTMLSelectElement;
+    expect(Array.from(picker.querySelectorAll("optgroup")).map((g) => g.label)).toEqual(["Your topics"]);
+  });
+
+  it("chooses a custom topic from the list like any other", async () => {
+    handlers.topics = () => json({ topics: [topicOne], customTopics: [customOne] });
+    handlers.next = () => json({ topic: customOne });
+    const user = userEvent.setup();
+    render(<SetupForm categories={categories} />);
+
+    await user.selectOptions(await screen.findByLabelText("Topic"), customOne.id);
+
+    expect(await screen.findByText(customOne.text, { selector: "p" })).toBeInTheDocument();
+    expect(JSON.parse(String(nextCall()[1]?.body))).toEqual({ category: "a", topicId: customOne.id });
+  });
+});
+
+describe("writing your own topic", () => {
+  const writeButton = () => screen.getByRole("button", { name: "Write your own topic" });
+  const useButton = () => screen.getByRole("button", { name: "Use this topic" });
+  const field = () => screen.getByLabelText("Your topic");
+
+  it("opens a field for the topic when asked", async () => {
+    const user = userEvent.setup();
+    render(<SetupForm categories={categories} />);
+    expect(screen.queryByLabelText("Your topic")).not.toBeInTheDocument();
+
+    await user.click(writeButton());
+
+    expect(field()).toHaveFocus();
+    expect(field()).toHaveAttribute("maxLength", "300");
+    expect(screen.queryByRole("button", { name: "Write your own topic" })).not.toBeInTheDocument();
+  });
+
+  it("saves the topic in the chosen category and uses it", async () => {
+    const user = userEvent.setup();
+    render(<SetupForm categories={categories} />);
+    await user.selectOptions(screen.getByLabelText("Category"), "b");
+    await user.click(writeButton());
+
+    await user.type(field(), customOne.text);
+    await user.click(useButton());
+
+    expect(await screen.findByText(customOne.text, { selector: "p" })).toBeInTheDocument();
+    expect(JSON.parse(String(createCall()[1]?.body))).toEqual({ category: "b", text: customOne.text });
+    expect(screen.queryByLabelText("Your topic")).not.toBeInTheDocument();
+    expect(continueButton()).toBeEnabled();
+
+    await user.click(continueButton());
+    expect(push).toHaveBeenCalledWith("/practice/record?topic=c1&speak=120&mode=video");
+  });
+
+  it("adds the saved topic to 'Your topics' and selects it there", async () => {
+    const user = userEvent.setup();
+    render(<SetupForm categories={categories} />);
+    await user.click(writeButton());
+
+    await user.type(field(), customOne.text);
+    await user.click(useButton());
+
+    const picker = (await screen.findByLabelText("Topic")) as HTMLSelectElement;
+    await waitFor(() => expect(picker).toHaveValue(customOne.id));
+    expect(picker.querySelector('optgroup[label="Your topics"]')?.textContent).toBe(customOne.text);
+  });
+
+  it("submits with Enter", async () => {
+    const user = userEvent.setup();
+    render(<SetupForm categories={categories} />);
+    await user.click(writeButton());
+
+    await user.type(field(), `${customOne.text}{Enter}`);
+
+    expect(await screen.findByText(customOne.text, { selector: "p" })).toBeInTheDocument();
+  });
+
+  it("keeps Use this topic disabled until there are at least 3 characters besides spaces", async () => {
+    const user = userEvent.setup();
+    render(<SetupForm categories={categories} />);
+    await user.click(writeButton());
+
+    expect(useButton()).toBeDisabled();
+    await user.type(field(), "  ab  ");
+    expect(useButton()).toBeDisabled();
+    await user.type(field(), "c");
+    expect(useButton()).toBeEnabled();
+  });
+
+  it("shows the server's message and keeps the text when saving is refused", async () => {
+    handlers.create = () => json({ error: "Keep the topic to 300 characters or fewer." }, 400);
+    const user = userEvent.setup();
+    render(<SetupForm categories={categories} />);
+    await user.click(writeButton());
+
+    await user.type(field(), "Something");
+    await user.click(useButton());
+
+    expect(await screen.findByText("Keep the topic to 300 characters or fewer.")).toBeInTheDocument();
+    expect(field()).toHaveValue("Something");
+    expect(continueButton()).toBeDisabled();
+  });
+
+  it("shows a connection message when saving fails to send", async () => {
+    handlers.create = () => {
+      throw new TypeError("Failed to fetch");
+    };
+    const user = userEvent.setup();
+    render(<SetupForm categories={categories} />);
+    await user.click(writeButton());
+
+    await user.type(field(), "Something");
+    await user.click(useButton());
+
+    expect(await screen.findByText(/Couldn't save your topic. Check your connection/)).toBeInTheDocument();
+  });
+
+  it("closes and clears the field on Cancel, keeping the chosen topic", async () => {
+    const user = userEvent.setup();
+    render(<SetupForm categories={categories} />);
+    await getTopic(user);
+    await user.click(writeButton());
+    await user.type(field(), "Half a thought");
+
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(screen.queryByLabelText("Your topic")).not.toBeInTheDocument();
+    expect(screen.getByText(topicOne.text, { selector: "p" })).toBeInTheDocument();
+    await user.click(writeButton());
+    expect(field()).toHaveValue("");
   });
 });
 

@@ -1,6 +1,6 @@
 # Chittle
 
-Chittle is a web app for practising impromptu speaking. You pick a topic category, get a random topic and record your answer on video or as audio only. The app transcribes the recording and scores it out of 1000 across six dimensions, with feedback and a rewrite of your answer.
+Chittle is a web app for practising impromptu speaking. You pick a topic category, get a random topic or write your own, and record your answer on video or as audio only. The app transcribes the recording and scores it out of 1000 across six dimensions, with feedback and a rewrite of your answer.
 
 - [SPEC.md](SPEC.md) is the product and technical spec.
 - [GLOSSARY.md](GLOSSARY.md) defines the terms the code and docs use, such as speaker, dimension and retake.
