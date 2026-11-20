@@ -14,7 +14,7 @@ export async function ProgressInsightCard({ userId }: { userId: string }) {
     <section className="card progress-insight" aria-labelledby="progress-insight-heading">
       <h2 id="progress-insight-heading">Coach&apos;s insight</h2>
       {assessed < MIN_ASSESSMENTS ? (
-        <p className="muted">Your coach&apos;s insights appear after a couple of practices.</p>
+        <p className="muted">Your coach&apos;s insight appears after two assessed practices.</p>
       ) : insight ? (
         <>
           <p className="progress-insight-text">{insight.text}</p>

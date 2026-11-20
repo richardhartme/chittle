@@ -43,25 +43,25 @@ describe("ReassessPanel", () => {
   it("labels an assessment made with an older scoring version", () => {
     render(<ReassessPanel recordingId="rec-1" scoringVersion={SCORING_VERSION - 1} canReassess />);
 
-    expect(screen.getByText("Assessed with an older version")).toBeInTheDocument();
+    expect(screen.getByText("Assessed with an older scoring version")).toBeInTheDocument();
   });
 
   it("labels an assessment with no scoring version recorded as older", () => {
     render(<ReassessPanel recordingId="rec-1" scoringVersion={null} canReassess />);
 
-    expect(screen.getByText("Assessed with an older version")).toBeInTheDocument();
+    expect(screen.getByText("Assessed with an older scoring version")).toBeInTheDocument();
   });
 
   it("doesn't label an assessment made with the current scoring version", () => {
     render(<ReassessPanel recordingId="rec-1" scoringVersion={SCORING_VERSION} canReassess />);
 
-    expect(screen.queryByText("Assessed with an older version")).not.toBeInTheDocument();
+    expect(screen.queryByText("Assessed with an older scoring version")).not.toBeInTheDocument();
   });
 
   it("still labels an older assessment, without the button, when the speaker has no provider keys", () => {
     render(<ReassessPanel recordingId="rec-1" scoringVersion={1} canReassess={false} />);
 
-    expect(screen.getByText("Assessed with an older version")).toBeInTheDocument();
+    expect(screen.getByText("Assessed with an older scoring version")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Re-assess" })).not.toBeInTheDocument();
   });
 });

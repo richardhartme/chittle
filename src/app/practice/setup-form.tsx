@@ -175,7 +175,7 @@ export function SetupForm({ categories, initial = {} }: Props) {
 
       <div className="row">
         <button onClick={() => fetchTopic()} disabled={loadingTopic || !category}>
-          {loadingTopic ? "Finding a topic…" : topic ? "Re-roll topic" : "Get a topic"}
+          {loadingTopic ? "Finding a topic…" : topic ? "Get another topic" : "Get a topic"}
         </button>
         <button className="primary" onClick={continueToRecord} disabled={!topic || loadingTopic}>
           Continue

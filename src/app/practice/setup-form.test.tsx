@@ -130,7 +130,7 @@ describe("choosing a topic", () => {
     expect(init?.method).toBe("POST");
     expect(JSON.parse(String(init?.body))).toEqual({ category: "a" });
     expect(continueButton()).toBeEnabled();
-    expect(screen.getByRole("button", { name: "Re-roll topic" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Get another topic" })).toBeInTheDocument();
   });
 
   it("re-rolls to a different topic", async () => {
@@ -139,7 +139,7 @@ describe("choosing a topic", () => {
     await getTopic(user);
     handlers.next = () => json({ topic: topicTwo });
 
-    await user.click(screen.getByRole("button", { name: "Re-roll topic" }));
+    await user.click(screen.getByRole("button", { name: "Get another topic" }));
 
     expect(await screen.findByText(topicTwo.text, { selector: "p" })).toBeInTheDocument();
     expect(screen.queryByText(topicOne.text, { selector: "p" })).not.toBeInTheDocument();
@@ -280,7 +280,7 @@ describe("coming back from the record page", () => {
     expect(screen.getByText(topicTwo.text, { selector: "p" })).toBeInTheDocument();
     expect(screen.getByLabelText("Speaking time (seconds)")).toHaveValue(75);
     expect(screen.getByRole("radio", { name: "Audio only" })).toBeChecked();
-    expect(screen.getByRole("button", { name: "Re-roll topic" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Get another topic" })).toBeInTheDocument();
   });
 
   it("continues with the prefilled setup without fetching a topic", async () => {

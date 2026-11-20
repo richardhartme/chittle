@@ -46,8 +46,8 @@ function errorFor(status: number): string {
   if (status === 400 || status === 413 || status === 415 || status === 422) {
     return "Deepgram couldn't read the recording's audio.";
   }
-  if (status === 429) return "Deepgram is busy, try again in a minute.";
-  return "Deepgram couldn't transcribe the recording, try again.";
+  if (status === 429) return "Deepgram is busy. Try again in a minute.";
+  return "Deepgram couldn't transcribe the recording. Try again.";
 }
 
 /**
@@ -87,16 +87,16 @@ export async function transcribe(
     } as RequestInit);
   } catch {
     await file.stream.cancel().catch(() => {});
-    throw new AssessmentError("Couldn't reach Deepgram, try again.");
+    throw new AssessmentError("Couldn't reach Deepgram. Try again.");
   }
   if (!res.ok) throw new AssessmentError(errorFor(res.status));
 
   const parsed = responseSchema.safeParse(await res.json().catch(() => null));
-  if (!parsed.success) throw new AssessmentError("Deepgram sent a reply we couldn't read, try again.");
+  if (!parsed.success) throw new AssessmentError("Chittle couldn't read Deepgram's reply. Try again.");
 
   const { transcript, words } = parsed.data.results.channels[0].alternatives[0];
   const text = transcript.trim();
-  if (!text || words.length === 0) throw new AssessmentError("No speech was detected.");
+  if (!text || words.length === 0) throw new AssessmentError("Deepgram heard no speech in the recording.");
 
   return {
     text,

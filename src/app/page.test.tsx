@@ -33,7 +33,7 @@ describe("the dashboard", () => {
     const html = await dashboard();
 
     expect(html).toContain("Coach&#x27;s insight");
-    expect(html).toContain("Your coach&#x27;s insights appear after a couple of practices.");
+    expect(html).toContain("Your coach&#x27;s insight appears after two assessed practices.");
   });
 
   it("leaves the coach's insight card out before the first recording", async () => {

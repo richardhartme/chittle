@@ -14,7 +14,7 @@ import { SCORING_VERSION } from "./version";
 
 export type AssessmentKeys = { deepgram: string; anthropic: string };
 
-const UNEXPECTED = "Something went wrong while assessing this recording, try again.";
+const UNEXPECTED = "Something went wrong while assessing this recording. Try again.";
 
 /**
  * Runs the assessment pipeline for a recording whose assessment was claimed at `claimedAt`, then

@@ -12,6 +12,6 @@ export async function GET(request: Request) {
     return Response.json({ topics: await categoryTopics(category) });
   } catch (err) {
     console.error("Failed to list topics", err);
-    return Response.json({ error: "Couldn't load topics. Please try again." }, { status: 500 });
+    return Response.json({ error: "Couldn't load topics. Try again." }, { status: 500 });
   }
 }

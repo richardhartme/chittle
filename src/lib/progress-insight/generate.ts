@@ -21,7 +21,7 @@ const SYSTEM_PROMPT = `You are a speaking coach looking across a speaker's recen
 
 Write one coaching observation of 1–3 sentences, the most useful pattern you can see across the assessments. Back it with the numbers given, for example:
 - comparing categories ("your Storytelling answers average 120 more than your Interview ones"),
-- a trend in one dimension ("Filler rate has risen from 60 to 110 over your last four practices"),
+- a trend in one dimension ("${DIMENSIONS.fillerRate.name} has risen from 60 to 110 over your last four practices"),
 - or progress on an area they want to work on.
 
 Guidance:

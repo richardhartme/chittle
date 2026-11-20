@@ -36,14 +36,14 @@ describe("ProviderKeyForm", () => {
   });
 
   it("shows the server's error and keeps the form", async () => {
-    vi.mocked(saveProviderKey).mockResolvedValue({ error: "That key wasn't accepted." });
+    vi.mocked(saveProviderKey).mockResolvedValue({ error: "The provider rejected that key." });
     const user = userEvent.setup();
     render(<ProviderKeyForm {...props} hint={null} />);
 
     await user.type(screen.getByLabelText("Deepgram key"), "dg-wrong");
     await user.click(screen.getByRole("button", { name: "Save" }));
 
-    expect(await screen.findByText("That key wasn't accepted.")).toBeInTheDocument();
+    expect(await screen.findByText("The provider rejected that key.")).toBeInTheDocument();
     expect(screen.getByLabelText("Deepgram key")).toBeInTheDocument();
   });
 

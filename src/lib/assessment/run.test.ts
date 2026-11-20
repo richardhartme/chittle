@@ -195,7 +195,7 @@ describe("runAssessment", () => {
 
     await runAssessment(recordingId, claim, keys);
 
-    expect(await assessment()).toMatchObject({ status: "failed", error: "The assessment was declined." });
+    expect(await assessment()).toMatchObject({ status: "failed", error: "Claude declined to assess this recording." });
   });
 
   it.each([
@@ -211,7 +211,7 @@ describe("runAssessment", () => {
 
     expect(await assessment()).toMatchObject({
       status: "failed",
-      error: "Something went wrong while assessing this recording, try again.",
+      error: "Something went wrong while assessing this recording. Try again.",
     });
     log.mockRestore();
   });
@@ -262,8 +262,8 @@ describe("runAssessment", () => {
     [401, "Deepgram rejected the key."],
     [402, "Your Deepgram account is out of credit."],
     [400, "Deepgram couldn't read the recording's audio."],
-    [429, "Deepgram is busy, try again in a minute."],
-    [500, "Deepgram couldn't transcribe the recording, try again."],
+    [429, "Deepgram is busy. Try again in a minute."],
+    [500, "Deepgram couldn't transcribe the recording. Try again."],
   ])("marks the assessment failed when Deepgram answers %i", async (status, message) => {
     deepgramReplies({ err_code: "X", err_msg: "nope" }, status);
 
@@ -278,7 +278,7 @@ describe("runAssessment", () => {
 
     await runAssessment(recordingId, claim, keys);
 
-    expect(await assessment()).toMatchObject({ status: "failed", error: "No speech was detected." });
+    expect(await assessment()).toMatchObject({ status: "failed", error: "Deepgram heard no speech in the recording." });
     expect(await transcript()).toBeUndefined();
   });
 
@@ -287,7 +287,7 @@ describe("runAssessment", () => {
 
     await runAssessment(recordingId, claim, keys);
 
-    expect(await assessment()).toMatchObject({ status: "failed", error: "Couldn't reach Deepgram, try again." });
+    expect(await assessment()).toMatchObject({ status: "failed", error: "Couldn't reach Deepgram. Try again." });
   });
 
   it("marks the assessment failed when the recording's file is missing", async () => {

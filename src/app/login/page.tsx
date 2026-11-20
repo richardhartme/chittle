@@ -18,7 +18,7 @@ async function Login({ searchParams }: Pick<PageProps<"/login">, "searchParams">
   return (
     <div className="card stack">
       <h1>Sign in</h1>
-      <p className="muted">No password needed. We&apos;ll email you a link. New here? It creates your account.</p>
+      <p className="muted">You don&apos;t need a password. Chittle emails you a sign-in link. If you&apos;re new, the link also creates your account.</p>
       {error === "invalid" && (
         <p className="error">That sign-in link is invalid or has expired. Request a new one below.</p>
       )}

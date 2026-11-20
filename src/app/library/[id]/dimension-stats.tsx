@@ -10,7 +10,7 @@ const whole = (n: number) => Math.round(n).toString();
 /** Phrases are stored lower case, so "I" is capitalised again for display. */
 const quoted = (phrase: string) => `“${phrase.replace(/\bi\b/g, "I")}”`;
 
-/** The statistics shown in a dimension's drawer (SPEC → Assessment → Statistics). Structure has none. */
+/** The statistics shown in a dimension's drawer (SPEC → Assessment → Statistics). Shape has none. */
 export function DimensionStats({
   dimension,
   measured,
@@ -161,7 +161,7 @@ function SentenceLengthBand({ average, band }: { average: number; band: Measurem
     <div
       className="band-bar"
       role="img"
-      aria-label={`Average sentence length: ${oneDecimal(average)} words, in the ${band} band (${range})`}
+      aria-label={`Average sentence length: ${oneDecimal(average)} words, in the ${band} band of ${range}`}
     >
       <div className="band-bar-track">
         {BANDS.map((b) => (

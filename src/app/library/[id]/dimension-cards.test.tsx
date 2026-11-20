@@ -53,7 +53,7 @@ const measured: Measurement = {
 const { judged } = scoreJudgement({
   judgement: judgementFixture({
     structure: {
-      summary: "Structure summary.",
+      summary: "Shape summary.",
       logicalSequence: { score: 45, feedback: "Your points built nicely." },
       transitions: { score: 30, feedback: "Link the second point to the first." },
       signposting: { score: 40, feedback: "Feedback." },
@@ -80,12 +80,23 @@ describe("DimensionCards", () => {
   it("shows a card for each dimension with its score out of the maximum", () => {
     renderCards();
 
-    expect(card(/^Structure/)).toHaveTextContent("205/250");
-    expect(card(/^Conciseness/)).toHaveTextContent("120/200");
-    expect(card(/^Confidence/)).toHaveTextContent("80/150");
-    expect(card(/^Pronunciation/)).toHaveTextContent("133/150");
-    expect(card(/^Filler rate/)).toHaveTextContent("110/150");
-    expect(card(/^Pace/)).toHaveTextContent("89/100");
+    expect(card(/^Shape/)).toHaveTextContent("205/250");
+    expect(card(/^Brevity/)).toHaveTextContent("120/200");
+    expect(card(/^Conviction/)).toHaveTextContent("80/150");
+    expect(card(/^Clarity/)).toHaveTextContent("133/150");
+    expect(card(/^Fluency/)).toHaveTextContent("110/150");
+    expect(card(/^Rhythm/)).toHaveTextContent("89/100");
+  });
+
+  it("groups the judged dimensions under What you said and the measured ones under How you said it", () => {
+    renderCards();
+
+    const names = (group: string) =>
+      within(screen.getByRole("region", { name: group }))
+        .getAllByRole("button")
+        .map((button) => button.querySelector(".dimension-card-name")?.textContent);
+    expect(names("What you said")).toEqual(["Shape", "Brevity", "Conviction"]);
+    expect(names("How you said it")).toEqual(["Clarity", "Fluency", "Rhythm"]);
   });
 
   it("shows each dimension's change since the previous attempt", () => {
@@ -100,11 +111,11 @@ describe("DimensionCards", () => {
       />,
     );
 
-    expect(card(/^Structure/)).toHaveAccessibleName(/205\/250 \+15 since your previous attempt$/);
-    expect(card(/^Confidence/)).toHaveAccessibleName(/80\/150 −12 since your previous attempt$/);
-    expect(card(/^Conciseness/)).toHaveAccessibleName(/120\/200 ±0 since your previous attempt$/);
-    // The previous attempt had no Pace score to compare with.
-    expect(card(/^Pace/)).not.toHaveAccessibleName(/previous attempt/);
+    expect(card(/^Shape/)).toHaveAccessibleName(/205\/250 \+15 since your previous attempt$/);
+    expect(card(/^Conviction/)).toHaveAccessibleName(/80\/150 −12 since your previous attempt$/);
+    expect(card(/^Brevity/)).toHaveAccessibleName(/120\/200 ±0 since your previous attempt$/);
+    // The previous attempt had no Rhythm score to compare with.
+    expect(card(/^Rhythm/)).not.toHaveAccessibleName(/previous attempt/);
   });
 
   it("shows no changes for a first attempt", () => {
@@ -118,11 +129,11 @@ describe("DimensionCards", () => {
   it("opens a drawer from a card with that dimension's summary and sub-scores", async () => {
     renderCards();
 
-    await userEvent.click(card(/^Structure/));
+    await userEvent.click(card(/^Shape/));
 
-    expect(screen.getByRole("dialog", { name: "Structure" })).toHaveTextContent(/^Structure.*205\/250/);
+    expect(screen.getByRole("dialog", { name: "Shape" })).toHaveTextContent(/^Shape.*205\/250/);
     const open = within(drawer());
-    expect(open.getByText("Structure summary.")).toBeInTheDocument();
+    expect(open.getByText("Shape summary.")).toBeInTheDocument();
     const subScores = within(open.getByRole("list", { name: "Scoring breakdown" })).getAllByRole("listitem");
     expect(subScores.map((li) => within(li).getByRole("heading").textContent)).toEqual([
       "Logical sequence",
@@ -136,7 +147,7 @@ describe("DimensionCards", () => {
 
   it("shows and hides each sub-score's feedback", async () => {
     renderCards();
-    await userEvent.click(card(/^Structure/));
+    await userEvent.click(card(/^Shape/));
     const transitions = within(drawer()).getAllByRole("listitem")[1];
     const toggle = within(transitions).getByRole("button", { name: "View feedback" });
     expect(within(transitions).queryByText("Link the second point to the first.")).not.toBeVisible();
@@ -154,54 +165,54 @@ describe("DimensionCards", () => {
 
   it("closes on Esc and returns focus to the card that opened it", async () => {
     renderCards();
-    await userEvent.click(card(/^Confidence/));
-    expect(screen.getByRole("dialog", { name: "Confidence" })).toBeVisible();
+    await userEvent.click(card(/^Conviction/));
+    expect(screen.getByRole("dialog", { name: "Conviction" })).toBeVisible();
 
     await userEvent.keyboard("{Escape}");
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(card(/^Confidence/)).toHaveFocus();
+    expect(card(/^Conviction/)).toHaveFocus();
   });
 
   it("closes from the close button and from a click on the backdrop", async () => {
     renderCards();
-    await userEvent.click(card(/^Pace/));
+    await userEvent.click(card(/^Rhythm/));
     await userEvent.click(within(drawer()).getByRole("button", { name: "Close" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(card(/^Pace/)).toHaveFocus();
+    expect(card(/^Rhythm/)).toHaveFocus();
 
-    await userEvent.click(card(/^Pace/));
+    await userEvent.click(card(/^Rhythm/));
     await userEvent.click(drawer()); // The dialog element itself is the backdrop: its contents are inside.
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("reopens the same drawer when its card is clicked again straight after Esc", async () => {
     renderCards();
-    await userEvent.click(card(/^Pace/));
+    await userEvent.click(card(/^Rhythm/));
 
     // Both before the browser fires the first close's `close` event.
     act(() => {
       fireEvent.keyDown(document, { key: "Escape" });
-      fireEvent.click(card(/^Pace/));
+      fireEvent.click(card(/^Rhythm/));
     });
 
     await act(() => new Promise((resolve) => setTimeout(resolve)));
-    expect(screen.getByRole("dialog", { name: "Pace" })).toBeVisible();
+    expect(screen.getByRole("dialog", { name: "Rhythm" })).toBeVisible();
   });
 
   it("opens a different dimension's drawer after one is closed", async () => {
     renderCards();
-    await userEvent.click(card(/^Pace/));
+    await userEvent.click(card(/^Rhythm/));
     await userEvent.keyboard("{Escape}");
 
-    await userEvent.click(card(/^Pronunciation/));
+    await userEvent.click(card(/^Clarity/));
 
-    expect(screen.getByRole("dialog", { name: "Pronunciation" })).toBeVisible();
+    expect(screen.getByRole("dialog", { name: "Clarity" })).toBeVisible();
   });
 
-  it("shows Conciseness's sentence statistics, redundant phrases and sentence-length band", async () => {
+  it("shows Brevity's sentence statistics, redundant phrases and sentence-length band", async () => {
     renderCards();
-    await userEvent.click(card(/^Conciseness/));
+    await userEvent.click(card(/^Brevity/));
 
     expect(stat("Words")).toHaveTextContent(/^350$/);
     expect(stat("Sentences")).toHaveTextContent(/^20$/);
@@ -210,13 +221,13 @@ describe("DimensionCards", () => {
     expect(stat("Redundant phrases")).toHaveTextContent(/^1$/);
     expect(within(drawer()).getByText("“at this moment in time”")).toBeInTheDocument();
     expect(
-      within(drawer()).getByRole("img", { name: "Average sentence length: 17.5 words, in the Ideal band (20 or fewer)" }),
+      within(drawer()).getByRole("img", { name: "Average sentence length: 17.5 words, in the Ideal band of 20 or fewer" }),
     ).toBeInTheDocument();
   });
 
-  it("shows Confidence's hedge counts, with a bar for each hedge phrase", async () => {
+  it("shows Conviction's hedge counts, with a bar for each hedge phrase", async () => {
     renderCards();
-    await userEvent.click(card(/^Confidence/));
+    await userEvent.click(card(/^Conviction/));
 
     expect(stat("Hedges")).toHaveTextContent(/^2$/);
     expect(stat("Per minute")).toHaveTextContent(/^2$/);
@@ -225,9 +236,9 @@ describe("DimensionCards", () => {
     expect(phrases.map((li) => li.textContent)).toEqual(["“I think”2"]);
   });
 
-  it("shows Filler rate's counts with the discourse fillers included, and a bar for each filler word", async () => {
+  it("shows Fluency's counts with the discourse fillers included, and a bar for each filler word", async () => {
     renderCards();
-    await userEvent.click(card(/^Filler rate/));
+    await userEvent.click(card(/^Fluency/));
 
     expect(stat("Fillers")).toHaveTextContent(/^7$/); // 5 measured + 2 "you know"
     expect(stat("Per minute")).toHaveTextContent(/^7$/);
@@ -236,37 +247,37 @@ describe("DimensionCards", () => {
     expect(words.map((li) => li.textContent)).toEqual(["“um”3", "“uh”2", "“you know”2"]);
   });
 
-  it("shows Pronunciation's clarity and the flagged words", async () => {
+  it("shows Clarity's clarity and the flagged words", async () => {
     renderCards();
-    await userEvent.click(card(/^Pronunciation/));
+    await userEvent.click(card(/^Clarity/));
 
     expect(stat("Clarity")).toHaveTextContent(/^96%$/);
     expect(stat("Flagged words")).toHaveTextContent(/^1$/);
     expect(within(within(drawer()).getByRole("list", { name: "Flagged words" })).getByText("quixotic")).toBeInTheDocument();
   });
 
-  it("shows Pace's average WPM, standard deviation and range", async () => {
+  it("shows Rhythm's average WPM, standard deviation and range", async () => {
     renderCards();
-    await userEvent.click(card(/^Pace/));
+    await userEvent.click(card(/^Rhythm/));
 
     expect(stat("Average WPM")).toHaveTextContent(/^170$/);
     expect(stat("Standard deviation")).toHaveTextContent(/^±20 WPM$/);
     expect(stat("Range")).toHaveTextContent(/^130–211 WPM$/);
   });
 
-  it("shows the pace label, the three WPM scales and both pace charts in the Pace drawer", async () => {
+  it("shows the pace label, the three WPM scales and both pace charts in the Rhythm drawer", async () => {
     renderCards();
-    await userEvent.click(card(/^Pace/));
+    await userEvent.click(card(/^Rhythm/));
     const open = within(drawer());
 
     expect(open.getByText("Slow", { selector: ".chip" })).toBeInTheDocument();
     expect(open.getByRole("img", { name: "Active WPM: 172, Slow" })).toBeInTheDocument();
     expect(open.getByRole("img", { name: "Baseline WPM: 181, Ideal" })).toHaveAccessibleDescription(
-      /middle half of your fluent stretches ran from 164 to 200 WPM/,
+      /middle half of your fluent stretches was between 164 and 200 WPM/,
     );
     expect(open.getByRole("img", { name: "Overall WPM: 142, Ideal" })).toBeInTheDocument();
     expect(open.getByRole("img", { name: "WPM over time" })).toHaveAccessibleDescription(
-      /from 130 to 211 WPM.*3 windows/,
+      /between 130 and 211 WPM.*3 windows/,
     );
     expect(open.getByRole("img", { name: "Pace variation" })).toHaveAccessibleDescription(
       /4 stretches of speech.*1 rush zone.*no drag zones/,
@@ -277,14 +288,15 @@ describe("DimensionCards", () => {
     const measuredOnly = { structure: null, conciseness: null, confidence: null, pronunciation: 133, fillerRate: 120, pace: 89 };
     render(<DimensionCards scores={measuredOnly} measured={measured} durationSeconds={65} />);
 
-    expect(screen.queryByRole("button", { name: /^Structure/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Shape/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "What you said" })).not.toBeInTheDocument();
     expect(screen.getAllByRole("listitem").map((li) => li.textContent)).toEqual([
-      "Pronunciation133/150",
-      "Filler rate120/150",
-      "Pace89/100",
+      "Clarity133/150",
+      "Fluency120/150",
+      "Rhythm89/100",
     ]);
 
-    await userEvent.click(card(/^Pace/));
+    await userEvent.click(card(/^Rhythm/));
 
     const subScores = within(within(drawer()).getByRole("list", { name: "Scoring breakdown" })).getAllByRole("listitem");
     expect(subScores[0]).toHaveTextContent("Pause timing50/50");

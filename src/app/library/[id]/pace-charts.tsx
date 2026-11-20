@@ -48,7 +48,7 @@ export function PaceCharts({ pace }: { pace: Pace }) {
           wpm={pace.activeWpm}
           band={pace.activeBand}
           edges={ACTIVE_WPM_BANDS}
-          explanation={`Your speed while you were actually speaking, leaving out pauses of ${LONG_GAP_SECONDS} seconds or more. Between ${IDEAL_ACTIVE_WPM.min} and ${IDEAL_ACTIVE_WPM.max} words a minute sounds natural and is easy to follow.`}
+          explanation={`Your speed while speaking. It leaves out pauses of ${LONG_GAP_SECONDS} seconds or more. Between ${IDEAL_ACTIVE_WPM.min} and ${IDEAL_ACTIVE_WPM.max} words a minute is easy to follow.`}
         />
         {pace.baselineWpm !== null && pace.baselineBand !== null ? (
           <BandedScale
@@ -57,17 +57,17 @@ export function PaceCharts({ pace }: { pace: Pace }) {
             band={pace.baselineBand}
             edges={ACTIVE_WPM_BANDS}
             range={pace.baselineRange ?? undefined}
-            explanation={`Your natural pace: the middle speed of your fluent stretches of speech (${FLUENT_SEGMENT_MIN_WORDS} or more words without a filler). The bracket shows the middle half of those stretches. Rush and drag zones are measured against it.`}
+            explanation={`Your natural pace. It is the median speed of your fluent stretches of speech, which are runs of ${FLUENT_SEGMENT_MIN_WORDS} or more words without a filler. The bracket shows the middle half of those stretches. Rush and drag zones are measured against your baseline.`}
           />
         ) : (
-          <p className="muted">There wasn’t enough fluent speech to find your baseline pace.</p>
+          <p className="muted">There wasn&apos;t enough fluent speech to find your baseline pace.</p>
         )}
         <BandedScale
           name="Overall WPM"
           wpm={pace.overallWpm}
           band={pace.overallBand}
           edges={OVERALL_WPM_BANDS}
-          explanation={`Every word over the whole recording, pauses included, so it runs lower than Active WPM. Between ${overallIdeal} and ${overallFast} words a minute is ideal.`}
+          explanation={`Every word across the whole recording, pauses included, so it is lower than Active WPM. Between ${overallIdeal} and ${overallFast} words a minute is ideal.`}
         />
       </section>
       <WpmOverTime pace={pace} />
@@ -109,7 +109,7 @@ function BandedScale({
   const title = `${name}: ${whole(wpm)}, ${band}`;
   const summary = [
     `${band} is ${bandRange} WPM, and the ideal is ${edges[1]}–${edges[2]} WPM.`,
-    range && `The middle half of your fluent stretches ran from ${whole(range[0])} to ${whole(range[1])} WPM.`,
+    range && `The middle half of your fluent stretches was between ${whole(range[0])} and ${whole(range[1])} WPM.`,
   ]
     .filter(Boolean)
     .join(" ");
@@ -277,7 +277,7 @@ function WpmOverTime({ pace }: { pace: Pace }) {
         </svg>
       </div>
       <p id={`${id}-summary`} className="sr-only" aria-hidden="true">
-        {`Your pace ran from ${whole(range[0])} to ${whole(range[1])} WPM across ${count(windows.length, "window")} of about ${WINDOW_SECONDS} seconds, averaging ${whole(average)} WPM. The ideal is ${IDEAL_ACTIVE_WPM.min}–${IDEAL_ACTIVE_WPM.max} WPM.`}
+        {`Your pace was between ${whole(range[0])} and ${whole(range[1])} WPM across ${count(windows.length, "window")} of about ${WINDOW_SECONDS} seconds. The average was ${whole(average)} WPM. The ideal is ${IDEAL_ACTIVE_WPM.min}–${IDEAL_ACTIVE_WPM.max} WPM.`}
       </p>
       <p className="muted chart-explanation">
         Your words per minute every {WINDOW_SECONDS} seconds or so. The green band is the ideal {IDEAL_ACTIVE_WPM.min}–{IDEAL_ACTIVE_WPM.max} WPM.

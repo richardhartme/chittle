@@ -25,7 +25,7 @@ export type CoachInsights = Omit<Judgement["coachInsights"], "summary" | "shorte
 export type JudgedResult = {
   dimensions: Record<DimensionKey, { summary: string; subScores: Record<string, ScoredSubScore> }>;
   hedges: { total: number; perMinute: number; breakdown: PhraseCount[] };
-  /** The measured fillers plus the discourse fillers Claude found, which together set Filler rate. */
+  /** The measured fillers plus the discourse fillers Claude found, which together set Fluency. */
   fillers: { total: number; perMinute: number; per100Words: number; breakdown: FillerCount[] };
   redundantPhrases: string[];
   overview: string;
@@ -40,7 +40,7 @@ export type Scored = { scores: Record<DimensionKey, number>; total: number; judg
 /**
  * Checks Claude's judgement against the transcript and combines it with the measurement: clamps each
  * judged score to its range, caps hedge and filler counts at the times they really occur, adds the
- * discourse fillers to Filler rate, and sums the dimensions into the total. Pure.
+ * discourse fillers to Fluency, and sums the dimensions into the total. Pure.
  */
 export function scoreJudgement({
   judgement,

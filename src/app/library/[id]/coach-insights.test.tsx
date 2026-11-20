@@ -88,12 +88,12 @@ describe("CoachInsightsCard", () => {
     expect(within(drawer()).queryByRole("region", { name: "Shorter ways to say it" })).not.toBeInTheDocument();
   });
 
-  it("opens a drawer with how you said it against a better order, and why", async () => {
+  it("opens a drawer with your order against a better order, and why", async () => {
     render(<CoachInsightsCard insights={insights} />);
 
     await userEvent.click(card());
 
-    expect(items(within(section("How you said it")).getByRole("list"))).toEqual(insights.howYouSaidIt);
+    expect(items(within(section("Your order")).getByRole("list"))).toEqual(insights.howYouSaidIt);
     const better = section("Better order");
     expect(items(within(better).getByRole("list"))).toEqual(insights.betterOrder);
     expect(within(better).getByText(insights.orderExplanation)).toBeInTheDocument();

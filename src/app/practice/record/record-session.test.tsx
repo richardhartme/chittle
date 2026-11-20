@@ -366,10 +366,10 @@ describe("saving", () => {
   });
 
   it("reports an upload failure and retries the same recording", async () => {
-    uploadHandler = () => json({ error: "Empty upload" }, 400);
+    uploadHandler = () => json({ error: "The upload was empty." }, 400);
     const user = await recordAndStop();
 
-    expect(await screen.findByText("Couldn't save your recording: Empty upload")).toBeInTheDocument();
+    expect(await screen.findByText("Couldn't save your recording. The upload was empty.")).toBeInTheDocument();
     expect(push).not.toHaveBeenCalled();
     const firstBody = uploadCalls()[0][1]?.body;
 
@@ -387,13 +387,13 @@ describe("saving", () => {
       throw new Error("Network down");
     };
     await recordAndStop();
-    expect(await screen.findByText("Couldn't save your recording: Network down")).toBeInTheDocument();
+    expect(await screen.findByText("Couldn't save your recording. Network down")).toBeInTheDocument();
   });
 
   it("falls back to a generic message when the error response isn't JSON", async () => {
     uploadHandler = () => new Response("Bad gateway", { status: 502 });
     await recordAndStop();
-    expect(await screen.findByText("Couldn't save your recording: Upload failed")).toBeInTheDocument();
+    expect(await screen.findByText("Couldn't save your recording. The upload failed.")).toBeInTheDocument();
   });
 
   it("falls back to the browser default MIME type when none are supported", async () => {

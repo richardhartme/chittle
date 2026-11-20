@@ -17,19 +17,19 @@ describe("ScoreHistoryChart", () => {
 
     const legend = screen.getByRole("list", { name: "Dimensions" });
     expect(within(legend).getAllByRole("listitem").map((item) => item.textContent?.trim())).toEqual([
-      "Structure",
-      "Conciseness",
-      "Confidence",
-      "Pronunciation",
-      "Filler rate",
-      "Pace",
+      "Shape",
+      "Brevity",
+      "Conviction",
+      "Clarity",
+      "Fluency",
+      "Rhythm",
     ]);
   });
 
   it("has a one-entry legend when a single dimension is selected", () => {
-    render(<ScoreHistoryChart view={{ keys: ["pace"], max: 100, name: "Pace" }} columns={[{ ...column, value: 65 }]} />);
+    render(<ScoreHistoryChart view={{ keys: ["pace"], max: 100, name: "Rhythm" }} columns={[{ ...column, value: 65 }]} />);
 
     const legend = screen.getByRole("list", { name: "Dimensions" });
-    expect(within(legend).getAllByRole("listitem").map((item) => item.textContent?.trim())).toEqual(["Pace"]);
+    expect(within(legend).getAllByRole("listitem").map((item) => item.textContent?.trim())).toEqual(["Rhythm"]);
   });
 });

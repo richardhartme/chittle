@@ -27,7 +27,7 @@ async function Account({ searchParams }: Pick<PageProps<"/account">, "searchPara
       <section className="card stack">
         <h2>Provider keys</h2>
         <p className="muted">
-          Recordings are assessed using your own keys, so you pay the providers directly. Create them in the{" "}
+          Chittle assesses your recordings with your own keys, so you pay the providers yourself. Create the keys in the{" "}
           <a href={providerDetails.deepgram.keysUrl} target="_blank" rel="noreferrer">
             Deepgram console
           </a>{" "}
@@ -50,8 +50,7 @@ async function Account({ searchParams }: Pick<PageProps<"/account">, "searchPara
       <form action={deleteAccount} className="card stack">
         <h2>Delete account</h2>
         <p className="muted">
-          This permanently deletes your account, all of your recordings and their video files. It can&apos;t be
-          undone.
+          This deletes your account, your recordings and their files. You can&apos;t undo it.
         </p>
         <label>
           Type your email address to confirm

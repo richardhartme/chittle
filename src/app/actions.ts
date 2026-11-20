@@ -23,7 +23,7 @@ export async function requestLoginLink(_prev: FormState, formData: FormData): Pr
     await requestMagicLink(email.data);
   } catch (err) {
     console.error("Failed to send magic link", err);
-    return { error: "We couldn't send your sign-in link. Please try again." };
+    return { error: "Couldn't send your sign-in link. Try again." };
   }
   return { sent: true };
 }
@@ -101,7 +101,7 @@ const focusVoteSchema = z.object({
 export async function setFocusVote(recordingId: string, area: string, vote: FocusVote | null): Promise<SaveFocusVoteResult> {
   const user = await requireUser();
   const input = focusVoteSchema.safeParse({ recordingId, area, vote });
-  if (!input.success) return { error: "That vote couldn't be saved." };
+  if (!input.success) return { error: "Couldn't save that vote." };
 
   // Scoped to the signed-in user, so nobody can vote on another speaker's recording.
   return saveFocusVote(user.id, input.data.recordingId, input.data.area, input.data.vote);

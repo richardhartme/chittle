@@ -1,10 +1,10 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
-import { DIMENSION_KEYS, DIMENSIONS, type DimensionKey } from "@/lib/assessment/dimensions";
+import { DIMENSION_GROUPS, DIMENSION_KEYS, DIMENSIONS, type DimensionKey } from "@/lib/assessment/dimensions";
 import { measuredSubScores, type Measurement } from "@/lib/assessment/measure";
 import type { JudgedResult } from "@/lib/assessment/score";
-import { DimensionIcon } from "./dimension-icons";
+import { DimensionIcon } from "@/components/dimension-icons";
 import { DimensionStats } from "./dimension-stats";
 import { DrawerCloseButton, useDrawer } from "./drawer";
 import { PaceChip } from "./pace-charts";
@@ -22,7 +22,7 @@ type Props = {
 };
 
 /**
- * A card for each dimension's score. Each opens a drawer with the dimension's summary, sub-scores and
+ * A card for each dimension's score, under the two group headings. Each opens a drawer with the dimension's summary, sub-scores and
  * statistics. Assessments from before judging (no `judged`) have the measured dimensions only.
  */
 export function DimensionCards(props: Props) {
@@ -34,29 +34,40 @@ export function DimensionCards(props: Props) {
 
   return (
     <>
-      <ul className="dimension-cards" aria-label="Dimension scores">
-        {keys.map((key) => (
-          <li key={key}>
-            <button
-              type="button"
-              ref={(el) => {
-                cards.current[key] = el;
-              }}
-              className={`card dimension-card ${key}`}
-              aria-haspopup="dialog"
-              onClick={() => drawer.open(key)}
-            >
-              <DimensionIcon dimension={key} />
-              <span className="dimension-card-name">{DIMENSIONS[key].name}</span>
-              <ScoreOutOf score={scores[key]} max={DIMENSIONS[key].max} as="span" />
-              <CardChange score={scores[key]} previous={previousScores?.[key] ?? null} />
-              <svg className="chevron" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20">
-                <path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </button>
-          </li>
-        ))}
-      </ul>
+      <div className="dimension-groups">
+        {DIMENSION_GROUPS.map(({ title, keys: groupKeys }) => {
+          const shown = groupKeys.filter((key) => keys.includes(key));
+          if (shown.length === 0) return null;
+          return (
+            <section key={title} className="dimension-group" aria-label={title}>
+              <h2 className="dimension-group-title">{title}</h2>
+              <ul className="dimension-cards">
+                {shown.map((key) => (
+                  <li key={key}>
+                    <button
+                      type="button"
+                      ref={(el) => {
+                        cards.current[key] = el;
+                      }}
+                      className={`card dimension-card ${key}`}
+                      aria-haspopup="dialog"
+                      onClick={() => drawer.open(key)}
+                    >
+                      <DimensionIcon dimension={key} />
+                      <span className="dimension-card-name">{DIMENSIONS[key].name}</span>
+                      <ScoreOutOf score={scores[key]} max={DIMENSIONS[key].max} as="span" />
+                      <CardChange score={scores[key]} previous={previousScores?.[key] ?? null} />
+                      <svg className="chevron" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20">
+                        <path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          );
+        })}
+      </div>
 
       <dialog {...drawer.dialogProps} className={`drawer ${open ?? ""}`} aria-labelledby="drawer-title">
         {open && <Drawer dimension={open} {...props} onClose={drawer.close} />}

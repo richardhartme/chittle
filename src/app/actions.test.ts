@@ -92,7 +92,7 @@ describe("requestLoginLink", () => {
     vi.mocked(sendMagicLinkEmail).mockRejectedValue(new Error("smtp down"));
 
     expect(await requestLoginLink(undefined, form({ email: "a@example.com" }))).toEqual({
-      error: "We couldn't send your sign-in link. Please try again.",
+      error: "Couldn't send your sign-in link. Try again.",
     });
   });
 });
@@ -452,7 +452,7 @@ describe("saveProviderKey", () => {
     await signIn();
     deepgramFetch.mockResolvedValue(new Response("{}", { status }));
 
-    expect(await save({ provider: "deepgram", key: "dg-wrong" })).toEqual({ error: "That key wasn't accepted." });
+    expect(await save({ provider: "deepgram", key: "dg-wrong" })).toEqual({ error: "The provider rejected that key." });
     expect(await db.select().from(providerKeys)).toHaveLength(0);
   });
 
@@ -463,7 +463,7 @@ describe("saveProviderKey", () => {
     await signIn();
     listModels.mockRejectedValue(error);
 
-    expect(await save({ provider: "anthropic", key: "sk-wrong" })).toEqual({ error: "That key wasn't accepted." });
+    expect(await save({ provider: "anthropic", key: "sk-wrong" })).toEqual({ error: "The provider rejected that key." });
     expect(await db.select().from(providerKeys)).toHaveLength(0);
   });
 
@@ -471,12 +471,12 @@ describe("saveProviderKey", () => {
     await signIn();
     deepgramFetch.mockRejectedValueOnce(new TypeError("fetch failed"));
     expect(await save({ provider: "deepgram", key: "dg-secret-abcd" })).toEqual({
-      error: "Couldn't check the key, try again.",
+      error: "Couldn't check the key. Try again.",
     });
 
     deepgramFetch.mockResolvedValueOnce(new Response("{}", { status: 500 }));
     expect(await save({ provider: "deepgram", key: "dg-secret-abcd" })).toEqual({
-      error: "Couldn't check the key, try again.",
+      error: "Couldn't check the key. Try again.",
     });
     expect(await db.select().from(providerKeys)).toHaveLength(0);
   });
@@ -485,7 +485,7 @@ describe("saveProviderKey", () => {
     await signIn();
     listModels.mockRejectedValue(new APIConnectionError({ message: "Connection error." }));
 
-    expect(await save({ provider: "anthropic", key: "sk-ant" })).toEqual({ error: "Couldn't check the key, try again." });
+    expect(await save({ provider: "anthropic", key: "sk-ant" })).toEqual({ error: "Couldn't check the key. Try again." });
     expect(await db.select().from(providerKeys)).toHaveLength(0);
   });
 
@@ -508,7 +508,7 @@ describe("saveProviderKey", () => {
     vi.stubEnv("ENCRYPTION_KEY", value);
 
     expect(await save({ provider: "deepgram", key: "dg-secret-abcd" })).toEqual({
-      error: "Keys can't be saved because this server has no valid ENCRYPTION_KEY set.",
+      error: "This server can't save keys because its ENCRYPTION_KEY is missing or invalid.",
     });
     expect(deepgramFetch).not.toHaveBeenCalled();
     expect(await db.select().from(providerKeys)).toHaveLength(0);

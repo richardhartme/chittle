@@ -47,7 +47,7 @@ export function FocusVoteToggles({ recordingId, area, vote }: { recordingId: str
       ))}
       {failed && (
         <span role="alert" className="error">
-          Your vote wasn&apos;t saved. Try again.
+          Couldn&apos;t save your vote. Try again.
         </span>
       )}
     </div>

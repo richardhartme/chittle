@@ -29,6 +29,6 @@ export async function POST(request: Request) {
     return Response.json({ topic: { id: topic.id, text: topic.text } });
   } catch (err) {
     console.error("Failed to pick a topic", err);
-    return Response.json({ error: "Couldn't get a topic. Please try again." }, { status: 500 });
+    return Response.json({ error: "Couldn't get a topic. Try again." }, { status: 500 });
   }
 }

@@ -33,14 +33,14 @@ describe("LoginForm", () => {
   });
 
   it("shows an error from the server and keeps the form", async () => {
-    vi.mocked(requestLoginLink).mockResolvedValue({ error: "We couldn't send your sign-in link. Please try again." });
+    vi.mocked(requestLoginLink).mockResolvedValue({ error: "Couldn't send your sign-in link. Try again." });
     const user = userEvent.setup();
     render(<LoginForm />);
 
     await user.type(screen.getByLabelText("Email address"), "a@example.com");
     await user.click(screen.getByRole("button", { name: "Email me a sign-in link" }));
 
-    expect(await screen.findByText("We couldn't send your sign-in link. Please try again.")).toBeInTheDocument();
+    expect(await screen.findByText("Couldn't send your sign-in link. Try again.")).toBeInTheDocument();
     expect(screen.getByLabelText("Email address")).toBeInTheDocument();
   });
 

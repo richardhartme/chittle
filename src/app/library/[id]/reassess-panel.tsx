@@ -24,7 +24,7 @@ export function ReassessPanel({
 
   return (
     <section className="card stack" aria-label="Re-assess">
-      {outdated && <p className="muted">Assessed with an older version</p>}
+      {outdated && <p className="muted">Assessed with an older scoring version</p>}
       {canReassess &&
         (confirming ? (
           <form action={assessRecording} className="stack">

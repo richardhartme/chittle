@@ -18,7 +18,7 @@ import { requireUser } from "@/lib/auth/session";
 import { focusVotesOn } from "@/lib/focus-votes";
 import { hasProviderKeys } from "@/lib/provider-keys";
 import { formatDate, formatDuration } from "@/lib/format";
-import { recordingMode } from "@/lib/practice";
+import { practiceAgainHref, recordingMode } from "@/lib/practice";
 import { AssessmentPoller } from "./assessment-poller";
 import { AudioPlayer } from "./audio-player";
 import { CoachInsightsCard } from "./coach-insights";
@@ -70,6 +70,10 @@ async function Recording({ params }: Pick<PageProps<"/library/[id]">, "params">)
       <h1>{topic}</h1>
       <p className="muted">
         {formatDate(recording.createdAt)} · {formatDuration(recording.durationSeconds)}
+      </p>
+      {/* A retake: its results compare against this one. */}
+      <p>
+        <Link href={practiceAgainHref(recording)}>Practise this topic again</Link>
       </p>
 
       {mode === "audio" ? (
@@ -155,7 +159,7 @@ async function AssessmentPanel({
         )}
         <section className="card stack">
           <h2>Transcript</h2>
-          <p>{row?.transcript ?? "No transcript was stored."}</p>
+          <p>{row?.transcript ?? "This recording has no transcript."}</p>
         </section>
       </>
     );

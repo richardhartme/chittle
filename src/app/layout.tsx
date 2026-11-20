@@ -11,8 +11,8 @@ const display = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-disp
 const body = Figtree({ subsets: ["latin"], variable: "--font-body" });
 
 export const metadata: Metadata = {
-  title: "Chittle — practise speaking",
-  description: "Get a random topic, record yourself speaking on video, and track how you improve.",
+  title: "Practise speaking with Chittle",
+  description: "Answer a random topic on camera or with audio only. Chittle scores your answer out of 1000 and tells you what to change next time.",
 };
 
 // Every page here depends on the signed-in user, so the shell (header and

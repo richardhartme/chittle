@@ -48,7 +48,7 @@ describe("ProgressInsightCard", () => {
     render(await ProgressInsightCard({ userId }));
 
     expect(screen.getByRole("heading", { name: "Coach's insight" })).toBeInTheDocument();
-    expect(screen.getByText("Your coach's insights appear after a couple of practices.")).toBeInTheDocument();
+    expect(screen.getByText("Your coach's insight appears after two assessed practices.")).toBeInTheDocument();
     expect(screen.queryByText(/^Updated/)).not.toBeInTheDocument();
   });
 

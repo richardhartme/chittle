@@ -12,7 +12,7 @@ General self-improvers and professionals (interview, presentation and public-spe
 
 1. User signs in with a magic link.
 2. User picks a **category** (e.g. Interview, Everyday, Opinion, Storytelling, Work).
-3. The app serves a random **topic** from that category. The user can **re-roll** as often as they like (no cap).
+3. The app serves a random **topic** from that category. The user can ask for **another topic** as often as they like, with no cap.
 4. User sets their **speaking duration** and chooses to record **video and audio** or **audio only**, then continues to the record page. Setup never turns on the camera or microphone.
 5. The record page asks only for the devices the chosen mode needs and shows a camera preview or a microphone level meter. The user prepares for as long as they like, then presses **Start recording**.
 6. While recording, the speaking time counts down. At zero it flashes, then counts the overtime. It never stops the recording: the user stops when they've finished.
@@ -27,7 +27,7 @@ General self-improvers and professionals (interview, presentation and public-spe
   - **Predefined** topics/questions, seeded into the database (e.g. Interview → "Tell me about yourself").
   - **AI-generated** topics, produced on demand by the Claude API (small, cheap model) using the **server's** API key.
 - Each user's **seen topics are tracked**; picking and generation exclude topics the user has already seen, so topics don't repeat.
-- Re-roll is unlimited. (Each re-roll may invoke the LLM, so cost scales with usage; a cap can be added later.)
+- Asking for another topic is unlimited. Each request may call the LLM, so cost grows with use. A cap can be added later.
 - Each category has a **framework** that answers are judged against:
 
 | Category | Framework |
@@ -71,33 +71,39 @@ How a recording is assessed is described in [ADR 0001](docs/adr/0001-deepgram-tr
 
 | Dimension | Max | Sub-scores | Source |
 | --- | --- | --- | --- |
-| Structure | 250 | Logical sequence, Transitions, Signposting, Opening quality, Closing quality (50 each) | Claude |
-| Conciseness | 200 | Word choice 70, Word economy 70, Sentence length 60 | Claude |
-| Confidence | 150 | Hedging frequency 75, Assertiveness 75 | Claude |
-| Pronunciation | 150 | Pronunciation clarity 150 | Code (Deepgram word confidence) |
-| Filler rate | 150 | Filler frequency 150 | Code |
-| Pace | 100 | Pause timing 50, Words per minute 50 | Code |
+| Shape | 250 | Logical sequence, Transitions, Signposting, Opening quality, Closing quality (50 each) | Claude |
+| Brevity | 200 | Word choice 70, Word economy 70, Sentence length 60 | Claude |
+| Conviction | 150 | Hedging frequency 75, Assertiveness 75 | Claude |
+| Clarity | 150 | Word clarity 150 | Code (Deepgram word confidence) |
+| Fluency | 150 | Filler frequency 150 | Code |
+| Rhythm | 100 | Pause timing 50, Words per minute 50 | Code |
 
-Structure is judged against the category's framework. Uptalk isn't scored (it needs pitch analysis, which is a future enhancement).
+Shape, Brevity and Conviction are shown under "What you said", and Clarity, Fluency and Rhythm under "How you said it". Shape is judged against the category's framework. Uptalk isn't scored (it needs pitch analysis, which is a future enhancement).
 
 **Statistics shown alongside the scores**
-- Conciseness: words, sentences, average sentence length (with a ≤20 / 21–30 / >30 band), long sentences, redundant phrases.
-- Confidence: hedge total, hedges per minute, duration, and a breakdown by hedge phrase.
-- Filler rate: filler total, fillers per minute, duration, and a breakdown by filler word.
-- Pronunciation: clarity percentage and the number of flagged (unclear) words.
-- Pace: average WPM, standard deviation, range, WPM over time, and Active, Baseline and Overall WPM on banded scales. Active and Baseline bands are <140, 140–180, 180–220 (ideal), 220–260, >260. Overall bands are <100, 100–130, 130–160 (ideal), 160–190, >190. Also a pace-variation chart of each stretch of speech against the baseline, with rush and drag thresholds.
+- Brevity: words, sentences, average sentence length (with a ≤20 / 21–30 / >30 band), long sentences, redundant phrases.
+- Conviction: hedge total, hedges per minute, duration, and a breakdown by hedge phrase.
+- Fluency: filler total, fillers per minute, duration, and a breakdown by filler word.
+- Clarity: clarity percentage and the number of flagged (unclear) words.
+- Rhythm: average WPM, standard deviation, range, WPM over time, and Active, Baseline and Overall WPM on banded scales. Active and Baseline bands are <140, 140–180, 180–220 (ideal), 220–260, >260. Overall bands are <100, 100–130, 130–160 (ideal), 160–190, >190. Also a pace-variation chart of each stretch of speech against the baseline, with rush and drag thresholds.
 
 **Feedback**
 - Each dimension has a summary paragraph, and each sub-score has its own feedback.
 - **Overview**, **strengths** and **areas to improve**. Each area to improve takes a **focus vote** (thumbs up: "I want to work on this", thumbs down: "not useful"). Votes are given to later assessments and to the progress insight.
-- **Coach insights**: a short summary of the one change that would help most, "How you said it" (the answer's points in the order spoken) against a "Better order" with an explanation, "Try opening with", and "Shorter ways to say it" (original sentence, shorter version, words saved).
+- **Coach insights**: a short summary of the one change that would help most, "Your order" (the answer's points in the order spoken) against a "Better order" with an explanation, "Try opening with", and "Shorter ways to say it" (original sentence, shorter version, words saved).
 - **Ideal version**: the user's answer rewritten in the category's framework, one section per framework step.
 
 ### Results page (`/library/[id]`)
-- Player (video uses the browser's controls; audio has the app's own: play/pause, a seek bar with the time, mute and volume, which phones leave to their own buttons), coach insights card, score composition bar (each dimension's share of 1000), six dimension cards, overview, strengths, areas to improve, and the transcript as plain text.
+- Player (video uses the browser's controls; audio has the app's own: play/pause, a seek bar with the time, mute and volume, which phones leave to their own buttons), coach insights card, score composition bar (each dimension's share of 1000), six dimension cards under the headings "What you said" and "How you said it", overview, strengths, areas to improve, and the transcript as plain text.
 - Clicking a dimension card opens a drawer (native `<dialog>`) with its sub-scores, "View feedback" toggles, statistics and charts. A "Coach insights" card above the score shows the summary (or, for assessments from before it, the suggested opening) and opens a drawer with the coach insights and the ideal version.
+- A "Practise this topic again" link under the date opens setup with the same topic, speaking time and mode filled in.
 - When the speaker has an earlier assessed recording of the topic, the results show its score and the change beside the total (linking to it), and each dimension card shows its change.
 - Retry or Assess as described above. Once assessed, Re-assess sits at the foot of the page, above Delete, each in its own card.
+
+### Landing page (signed-out home, `/`)
+- Says what Chittle does, the three steps (get a topic, record your answer, get your feedback), and what's scored, with each dimension's maximum and description under the two headings.
+- Phone screenshots of a sample answer's results and coach insights, taken from the demo account (`npm run db:seed-demo`) in the light theme. They sit beside their text on wide screens and scroll sideways on narrow ones.
+- Notes the dashboard and that assessment runs on the user's own Deepgram and Anthropic keys, then ends with a second "Get started with email" button.
 
 ### Dashboard (signed-in home, `/`)
 - Average score and a stacked bar chart of recent scores by dimension, filterable by dimension (all, or one) and range (last 7, last 30 or all practices).
@@ -185,7 +191,7 @@ The local-disk implementation writes under a configurable directory outside the 
 
 - `/login`, `/auth/verify` — magic link request and consumption
 - `/` — landing page when signed out; dashboard when signed in
-- `/practice` — setup: category, topic, speaking time and mode. Reads `topic`, `speak` and `mode` from the query to prefill when coming back from the record page.
+- `/practice` — setup: category, topic, speaking time and mode. Reads `topic`, `speak` and `mode` from the query to prefill when coming back from the record page or from "Practise this topic again".
 - `/practice/record?topic=<id>&speak=<seconds>&mode=video|audio` — device access, preview or level meter, recording and upload. Redirects to `/practice` if the topic is missing or unknown; the speaking time is clamped to 10–3600 seconds and the mode defaults to video.
 - `/library` — list of recordings; `/library/[id]` — results page
 - `/account` — provider keys and account deletion
@@ -209,4 +215,4 @@ The local-disk implementation writes under a configurable directory outside the 
 - Magic-link requests aren't rate limited yet.
 - Topic generation happens inline in the request that needs it, so the first user to exhaust a category waits on the LLM call.
 - An assessment interrupted by a restart isn't resumed; it shows as failed after about 5 minutes and must be retried.
-- Pronunciation is approximated from transcription confidence, not judged from the sound.
+- Clarity is approximated from transcription confidence, not judged from the sound.

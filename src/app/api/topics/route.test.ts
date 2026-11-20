@@ -63,7 +63,7 @@ describe("GET /api/topics", () => {
     const res = await get("?category=a");
 
     expect(res.status).toBe(500);
-    expect(await res.json()).toEqual({ error: "Couldn't load topics. Please try again." });
+    expect(await res.json()).toEqual({ error: "Couldn't load topics. Try again." });
     vi.restoreAllMocks();
   });
 });

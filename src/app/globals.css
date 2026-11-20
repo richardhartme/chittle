@@ -785,10 +785,29 @@ video {
   transform: translateX(-100%);
 }
 
+/* The dimension cards under their two headings: What you said and How you said it. */
+.dimension-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.dimension-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dimension-group-title {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
 .dimension-cards {
   list-style: none;
   padding: 0;
-  margin: 0 0 1.25rem;
+  margin: 0;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
@@ -1123,7 +1142,7 @@ html:has(dialog.drawer[open]) {
   font-size: 0.8rem;
 }
 
-/* Pace: the chip beside the score, the banded WPM scales and the two charts. */
+/* Rhythm: the chip beside the score, the banded WPM scales and the two charts. */
 .drawer-score {
   display: flex;
   align-items: center;
@@ -1551,8 +1570,33 @@ html:has(dialog.drawer[open]) {
     display: none;
   }
 
+  /* Each group's three cards become full-width rows: icon and name on the left, the score with its
+     change beneath on the right, then the chevron. */
   .dimension-cards {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.6rem;
+  }
+
+  .dimension-card {
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-areas: "icon name score chevron" "icon name change chevron";
+    align-items: center;
+    gap: 0 0.75rem;
+    padding: 0.8rem 1rem;
+  }
+
+  .dimension-card .score strong {
+    font-size: 1.5rem;
+  }
+
+  .dimension-card .score {
+    justify-self: end;
+    align-self: end;
+  }
+
+  .dimension-card .score-change {
+    justify-self: end;
+    align-self: start;
   }
 
   dialog.drawer {
@@ -1715,8 +1759,8 @@ html:has(dialog.drawer[open]) {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 1.5rem;
-  padding: 2.5rem 0 3.5rem;
+  gap: 2rem;
+  padding: 3.5rem 0 0.5rem;
 }
 
 .hero h1 {
@@ -1724,7 +1768,8 @@ html:has(dialog.drawer[open]) {
   margin: 0;
   font-size: clamp(2.5rem, 7vw, 4.25rem);
   font-weight: 800;
-  line-height: 1.05;
+  /* Room for the highlight on the second line to clear the first line's descenders. */
+  line-height: 1.22;
   letter-spacing: -0.035em;
   text-wrap: balance;
 }
@@ -1740,6 +1785,7 @@ html:has(dialog.drawer[open]) {
 .hero p {
   max-width: 34rem;
   font-size: 1.2rem;
+  line-height: 1.65;
   text-wrap: balance;
 }
 
@@ -1783,11 +1829,6 @@ html:has(dialog.drawer[open]) {
 .hero .button.primary:active {
   transform: translateY(3px);
   box-shadow: 0 1px 0 var(--indigo);
-}
-
-.hero-art {
-  width: min(100%, 360px);
-  height: auto;
 }
 
 .steps {
@@ -1839,6 +1880,172 @@ html:has(dialog.drawer[open]) {
   background: var(--indigo);
   color: #fff;
   font-weight: 700;
+}
+
+.landing {
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+}
+
+.landing h2 {
+  margin: 0;
+}
+
+/* Text beside a pair of phone screenshots; .reverse puts the text on the right. */
+.feature {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "text shots";
+  align-items: center;
+  gap: 2rem;
+}
+
+.feature.reverse {
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: "shots text";
+}
+
+.feature-text {
+  grid-area: text;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.feature-text h2,
+.section-intro h2,
+.landing-cta h2 {
+  font-size: clamp(1.6rem, 4vw, 2.1rem);
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.phone-shots {
+  grid-area: shots;
+  display: flex;
+  gap: 1rem;
+}
+
+.phone-shot {
+  flex: none;
+  width: 250px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.phone-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* A bezel that stands out from the page in either theme. */
+  border: 6px solid light-dark(var(--indigo), #4a3d78);
+  border-radius: 30px;
+  box-shadow: var(--shadow);
+}
+
+.phone-shot figcaption {
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.landing-note {
+  margin-top: -3rem;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.section-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 36rem;
+}
+
+.landing-scored {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.landing-dimensions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1rem;
+}
+
+.landing-dimensions li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1.1rem 1.25rem;
+  border: 1.5px solid var(--dimension);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.landing-dimensions h4 {
+  margin: 0;
+  font-family: var(--font-display), system-ui, sans-serif;
+  color: var(--heading);
+  font-size: 1.1rem;
+}
+
+.landing-dimensions h4 .muted {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.landing-more {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 1rem;
+}
+
+.landing-more h2 {
+  font-size: 1.3rem;
+}
+
+.landing-cta {
+  padding: 1rem 0 2rem;
+}
+
+/* Narrow screens: text above, then the screenshots in a strip that scrolls sideways. */
+@media (max-width: 720px) {
+  .landing {
+    gap: 3rem;
+  }
+
+  .feature,
+  .feature.reverse {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "text" "shots";
+    gap: 1.25rem;
+  }
+
+  .phone-shots {
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    margin-inline: -1.5rem;
+    padding: 0.25rem 1.5rem 0.75rem;
+    scroll-padding-inline: 1.5rem;
+  }
+
+  .phone-shot {
+    width: min(70vw, 280px);
+    scroll-snap-align: start;
+  }
+
+  .landing-note {
+    margin-top: -2rem;
+  }
 }
 
 .sr-only {

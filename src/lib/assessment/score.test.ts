@@ -58,7 +58,7 @@ describe("scoreJudgement", () => {
     });
   });
 
-  it("adds the discourse fillers actually in the transcript to the filler count and rescores Filler rate", () => {
+  it("adds the discourse fillers actually in the transcript to the filler count and rescores Fluency", () => {
     const { judged, scores } = score(
       judgementFixture({
         discourseFillers: [
@@ -82,14 +82,14 @@ describe("scoreJudgement", () => {
     expect(judged.dimensions.fillerRate.subScores.fillerFrequency.score).toBe(70);
   });
 
-  it("takes the measured scores for Pronunciation and Pace, and sums every dimension into the total", () => {
+  it("takes the measured scores for Clarity and Rhythm, and sums every dimension into the total", () => {
     const judgement = judgementFixture();
     judgement.structure.closingQuality.score = 45;
     judgement.conciseness.sentenceLength.score = 30;
 
     const { scores, total, judged } = score(judgement);
 
-    // Structure 40×4 + 45, Conciseness 40 + 40 + 30, Confidence 40 + 40, then the measured 133, 110 and 80.
+    // Shape 40×4 + 45, Brevity 40 + 40 + 30, Conviction 40 + 40, then the measured 133, 110 and 80.
     expect(scores).toEqual({
       structure: 205,
       conciseness: 110,

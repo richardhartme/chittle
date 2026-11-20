@@ -47,13 +47,13 @@ describe("FocusVoteToggles", () => {
 
   it("goes back to the stored vote and says so when saving fails", async () => {
     const user = userEvent.setup();
-    vi.mocked(setFocusVote).mockResolvedValue({ error: "That vote couldn't be saved." });
+    vi.mocked(setFocusVote).mockResolvedValue({ error: "Couldn't save that vote." });
     render(<FocusVoteToggles recordingId="rec-1" area="Cut the hedges" vote="up" />);
 
     await user.click(toggles().down);
 
     expect(toggles().up).toHaveAttribute("aria-pressed", "true");
     expect(toggles().down).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByRole("alert")).toHaveTextContent("Your vote wasn't saved");
+    expect(screen.getByRole("alert")).toHaveTextContent("Couldn't save your vote");
   });
 });

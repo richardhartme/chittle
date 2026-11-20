@@ -55,10 +55,10 @@ describe("buildProgressInsightRequest", () => {
     expect(second).toBeGreaterThan(first);
     expect(message).toMatch(/3 Nov 2026.*Interview \(STAR\).*640\/1000/);
     expect(message).toMatch(/5 Nov 2026.*Storytelling \(Story arc\).*712\/1000/);
-    expect(message).toContain("Structure 150/250");
-    expect(message).toContain("Structure 210/250");
-    expect(message).toContain("Filler rate 90/150");
-    expect(message).toContain("Pace 60/100");
+    expect(message).toContain("Shape 150/250");
+    expect(message).toContain("Shape 210/250");
+    expect(message).toContain("Fluency 90/150");
+    expect(message).toContain("Rhythm 60/100");
   });
 
   it("gives each assessment's areas to improve and the speaker's focus votes", () => {

@@ -116,6 +116,6 @@ describe("POST /api/topics/next", () => {
     const res = await post({ category: "a" });
 
     expect(res.status).toBe(500);
-    expect(await res.json()).toEqual({ error: "Couldn't get a topic. Please try again." });
+    expect(await res.json()).toEqual({ error: "Couldn't get a topic. Try again." });
   });
 });

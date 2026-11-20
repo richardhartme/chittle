@@ -52,9 +52,9 @@ describe("buildScoringRequest", () => {
 
     expect(message).toContain("Um, so I led the migration. We finished two weeks early.");
     expect(message).toContain("1:15");
-    expect(message).toMatch(/Pronunciation: 150\/150/);
-    expect(message).toMatch(/Filler rate: \d+\/150/);
-    expect(message).toMatch(/Pace: \d+\/100/);
+    expect(message).toMatch(/Clarity: 150\/150/);
+    expect(message).toMatch(/Fluency: \d+\/150/);
+    expect(message).toMatch(/Rhythm: \d+\/100/);
     expect(message).toMatch(/Fillers: 1 \(“um” ×1\)/);
     expect(message).toContain("Active WPM");
     expect(message).toMatch(/Average sentence length: 5 words/);

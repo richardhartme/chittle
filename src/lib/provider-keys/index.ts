@@ -18,12 +18,12 @@ export type SaveResult = { saved: true } | { error: string };
 export async function saveProviderKey(userId: string, which: Provider, key: string): Promise<SaveResult> {
   // Checked before the key goes anywhere, so a misconfigured server never sends it to the provider.
   if (!canEncrypt()) {
-    return { error: "Keys can't be saved because this server has no valid ENCRYPTION_KEY set." };
+    return { error: "This server can't save keys because its ENCRYPTION_KEY is missing or invalid." };
   }
 
   const check = await checkProviderKey(which, key);
-  if (check === "rejected") return { error: "That key wasn't accepted." };
-  if (check === "unavailable") return { error: "Couldn't check the key, try again." };
+  if (check === "rejected") return { error: "The provider rejected that key." };
+  if (check === "unavailable") return { error: "Couldn't check the key. Try again." };
 
   const values = { encryptedKey: encrypt(key), keyHint: key.slice(-4), updatedAt: new Date() };
   await db

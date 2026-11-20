@@ -52,14 +52,14 @@ Score the judged dimensions against this rubric, giving each sub-score a whole n
 
 ${rubric}
 
-Judge Structure against the category's framework: say which steps the answer covered, in what order, and which were missing. A strong answer needn't name the steps, but it should take them in order.
+Judge ${DIMENSIONS.structure.name} against the category's framework: say which steps the answer covered, in what order, and which were missing. A strong answer needn't name the steps, but it should take them in order.
 
 Scoring guidance:
 - Use the whole range. Around 60% of a sub-score's maximum is a typical first attempt, 80% is strong, and full marks are for answers you couldn't improve.
 - Judge what was said. Don't reward length for its own sake.
-- Pronunciation, Filler rate and Pace are measured from the transcript's words and timings, and already scored. Don't rescore them; explain their results to the speaker in plain terms.
+- ${DIMENSIONS.pronunciation.name}, ${DIMENSIONS.fillerRate.name} and ${DIMENSIONS.pace.name} are measured from the transcript's words and timings, and already scored. Don't rescore them; explain their results to the speaker in plain terms.
 - The transcript comes from speech recognition, so ignore transcription errors and missing punctuation.
-- Accent never lowers a score. Pronunciation measures how clearly words were heard, not how they sound.
+- Accent never lowers a score. ${DIMENSIONS.pronunciation.name} measures how clearly words were heard, not how they sound.
 
 Feedback:
 - Write in British English, speaking to the speaker as "you".
@@ -93,9 +93,9 @@ function metrics(measured: Measurement): string {
   const { pace, fillers, pronunciation, sentences, scores, subScores } = measured;
   const fillerList = fillers.breakdown.map(({ word, count }) => `“${word}” ×${count}`).join(", ");
   return [
-    `Pronunciation: ${scores.pronunciation}/${DIMENSIONS.pronunciation.max}. Clarity ${whole(pronunciation.clarity * 100)}%, ${pronunciation.flagged.length} unclear words${pronunciation.flagged.length ? ` (${pronunciation.flagged.map((w) => `“${w.word}”`).join(", ")})` : ""}.`,
-    `Filler rate: ${scores.fillerRate}/${DIMENSIONS.fillerRate.max}. Fillers: ${fillers.total}${fillerList ? ` (${fillerList})` : ""}, ${oneDecimal(fillers.perMinute)} per minute, ${oneDecimal(fillers.per100Words)} per 100 words. Discourse fillers you find will be added to this.`,
-    `Pace: ${scores.pace}/${DIMENSIONS.pace.max} (Pause timing ${subScores.pauseTiming}/${DIMENSIONS.pace.subScores.pauseTiming.max}, Words per minute ${subScores.wordsPerMinute}/${DIMENSIONS.pace.subScores.wordsPerMinute.max}). Active WPM ${whole(pace.activeWpm)} (${pace.activeBand}; 180–220 is ideal), Overall WPM ${whole(pace.overallWpm)} (${pace.overallBand}), ${pace.hesitationZones.length} hesitations mid-sentence, ${pace.rushZones.length} rushed and ${pace.dragZones.length} dragging stretches.`,
+    `${DIMENSIONS.pronunciation.name}: ${scores.pronunciation}/${DIMENSIONS.pronunciation.max}. Clarity ${whole(pronunciation.clarity * 100)}%, ${pronunciation.flagged.length} unclear words${pronunciation.flagged.length ? ` (${pronunciation.flagged.map((w) => `“${w.word}”`).join(", ")})` : ""}.`,
+    `${DIMENSIONS.fillerRate.name}: ${scores.fillerRate}/${DIMENSIONS.fillerRate.max}. Fillers: ${fillers.total}${fillerList ? ` (${fillerList})` : ""}, ${oneDecimal(fillers.perMinute)} per minute, ${oneDecimal(fillers.per100Words)} per 100 words. Discourse fillers you find will be added to this.`,
+    `${DIMENSIONS.pace.name}: ${scores.pace}/${DIMENSIONS.pace.max} (Pause timing ${subScores.pauseTiming}/${DIMENSIONS.pace.subScores.pauseTiming.max}, Words per minute ${subScores.wordsPerMinute}/${DIMENSIONS.pace.subScores.wordsPerMinute.max}). Active WPM ${whole(pace.activeWpm)} (${pace.activeBand}; 180–220 is ideal), Overall WPM ${whole(pace.overallWpm)} (${pace.overallBand}), ${pace.hesitationZones.length} hesitations mid-sentence, ${pace.rushZones.length} rushed and ${pace.dragZones.length} dragging stretches.`,
     `Sentences: ${sentences.sentences}, ${sentences.words} words. Average sentence length: ${oneDecimal(sentences.averageLength)} words (${sentences.averageBand}), ${sentences.longSentences} over 30 words.`,
   ].join("\n");
 }
@@ -174,7 +174,7 @@ async function ask<T>(req: MessageCreateParamsNonStreaming, format: OutputFormat
     throw err;
   }
   // With fallbacks, a refusal here means every model in the chain declined.
-  if (message.stop_reason === "refusal") throw new AssessmentError("The assessment was declined.");
+  if (message.stop_reason === "refusal") throw new AssessmentError("Claude declined to assess this recording.");
   return format.parse(replyText(message));
 }
 

@@ -58,7 +58,7 @@ function Drawer({ insights, onClose }: { insights: CoachInsights; onClose: () =>
         <DrawerCloseButton onClick={onClose} />
       </header>
 
-      <Section id="how-you-said-it" title="How you said it">
+      <Section id="your-order" title="Your order">
         <ol className="coach-points">
           {howYouSaidIt.map((point, i) => (
             <li key={i}>{point}</li>

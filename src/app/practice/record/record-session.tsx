@@ -96,10 +96,10 @@ export function RecordSession({ topic, speakSeconds, mode }: Props) {
           body: blob,
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error ?? "Upload failed");
+        if (!res.ok) throw new Error(data.error ?? "The upload failed.");
         router.push(`/library/${data.id}`);
       } catch (err) {
-        setUploadError(err instanceof Error ? err.message : "Upload failed");
+        setUploadError(err instanceof Error ? err.message : "The upload failed.");
       }
     },
     [router, topic.id, mode],
@@ -187,7 +187,7 @@ export function RecordSession({ topic, speakSeconds, mode }: Props) {
         {phase === "uploading" &&
           (uploadError ? (
             <>
-              <p className="error">Couldn&apos;t save your recording: {uploadError}</p>
+              <p className="error">Couldn&apos;t save your recording. {uploadError}</p>
               <div className="row">
                 <button
                   className="primary"

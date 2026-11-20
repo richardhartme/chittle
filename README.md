@@ -32,8 +32,8 @@ Recording needs camera and microphone access, which browsers only grant on `loca
 The app starts an assessment when a recording is uploaded, or when the speaker clicks Assess. It runs in Next's `after()` callback once the response has been sent ([ADR 0003](docs/adr/0003-assessments-run-in-after-with-stale-recovery.md)).
 
 1. Deepgram transcribes the recording and keeps filler words, with each word's timing and confidence. The app stores the transcript.
-2. Code measures Pace, Filler rate and Pronunciation from the transcript's words and timings.
-3. Claude scores Structure, Conciseness and Confidence against the category's framework, such as STAR for Interview or PREP for Opinion. It also writes the overview, strengths and areas to improve. The speaker's 20 most recent focus votes go into this request.
+2. Code measures Rhythm, Fluency and Clarity, the "How you said it" dimensions, from the transcript's words and timings.
+3. Claude scores Shape, Brevity and Conviction, the "What you said" dimensions, against the category's framework, such as STAR for Interview or PREP for Opinion. It also writes the overview, strengths and areas to improve. The speaker's 20 most recent focus votes go into this request.
 4. A second Claude request, sent at the same time, writes the coach insights. These include a better order for the answer, shorter ways to say long sentences and the ideal version.
 5. Once the assessment is stored, Claude rewrites the speaker's progress insight from their recent assessments. The dashboard shows it after two scored assessments.
 
@@ -57,6 +57,7 @@ From a recording's results page, a speaker can:
 | `npm run db:migrate` | Apply pending migrations |
 | `npm run db:seed` | Upsert categories and predefined topics. Safe to re-run. |
 | `npm run db:setup` | Apply migrations, then seed |
+| `npm run db:seed-demo` | Replace the local demo account (`demo@chittle.local`): two assessed attempts at one interview question, with hand-written feedback. Prints a link that signs in as it. The landing page's screenshots are of this account. Refuses to run in production. |
 | `npm test` | Run the Vitest suite once |
 | `npm run test:watch` | Re-run affected tests on change |
 | `npm run test:coverage` | Run the suite with a coverage report in `coverage/` |

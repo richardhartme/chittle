@@ -18,7 +18,7 @@ describe("DeleteForm", () => {
 
     await user.click(screen.getByRole("button", { name: "Delete recording" }));
 
-    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("permanently removes it"));
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("can't undo this"));
     expect(deleteRecording).toHaveBeenCalledTimes(1);
     expect(vi.mocked(deleteRecording).mock.calls[0][0].get("recordingId")).toBe("rec-1");
   });

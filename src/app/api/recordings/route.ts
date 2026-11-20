@@ -31,17 +31,17 @@ export async function POST(request: Request) {
 
   const url = new URL(request.url);
   const query = querySchema.safeParse(Object.fromEntries(url.searchParams));
-  if (!query.success) return Response.json({ error: "Invalid recording details" }, { status: 400 });
+  if (!query.success) return Response.json({ error: "The recording's details are invalid." }, { status: 400 });
 
   const contentType = request.headers.get("content-type") ?? "";
   const mimeType = contentType.split(";")[0].trim().toLowerCase();
   if (!mimeType.startsWith("video/") && !mimeType.startsWith("audio/")) {
-    return Response.json({ error: "Recordings must be audio or video" }, { status: 415 });
+    return Response.json({ error: "Recordings must be audio or video." }, { status: 415 });
   }
-  if (!request.body) return Response.json({ error: "Empty upload" }, { status: 400 });
+  if (!request.body) return Response.json({ error: "The upload was empty." }, { status: 400 });
 
   const [topic] = await db.select({ id: topics.id }).from(topics).where(eq(topics.id, query.data.topicId));
-  if (!topic) return Response.json({ error: "Unknown topic" }, { status: 400 });
+  if (!topic) return Response.json({ error: "That topic doesn't exist." }, { status: 400 });
 
   const id = randomUUID();
   const storageKey = `${user.id}/${id}.${EXTENSIONS[mimeType] ?? "bin"}`;
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
   const sizeBytes = await storage.put(storageKey, request.body);
   if (sizeBytes === 0) {
     await storage.delete(storageKey);
-    return Response.json({ error: "Empty upload" }, { status: 400 });
+    return Response.json({ error: "The upload was empty." }, { status: 400 });
   }
 
   try {

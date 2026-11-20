@@ -4,7 +4,7 @@ import { DIMENSIONS } from "./dimensions";
 /** Deepgram's filler tokens (with `filler_words=true`), in their plain-word form. */
 export const FILLER_TOKENS: ReadonlySet<string> = new Set(["uh", "um", "mhm", "mm-mm", "uh-uh", "uh-huh", "nuh-uh", "hmm"]);
 
-/** Filler rate (out of 150) loses this many points per filler per 100 words: 1.4 per 100 words scores 139. */
+/** Fluency (out of 150) loses this many points per filler per 100 words: 1.4 per 100 words scores 139. */
 export const FILLER_POINTS_PER_RATE = 8;
 
 /** Words heard with at least this confidence count as clear. */
@@ -12,7 +12,7 @@ export const CLEAR_CONFIDENCE = 0.8;
 /** Words heard with less than this confidence are flagged as unclear. */
 export const FLAGGED_CONFIDENCE = 0.6;
 /**
- * Pronunciation scores 150 at 100% clarity, falling in a straight line to 0 at this clarity: 96%
+ * Clarity scores 150 at 100% clarity, falling in a straight line to 0 at this clarity: 96%
  * clarity scores 133. It's about how clearly words land, never about accent.
  */
 export const ZERO_PRONUNCIATION_CLARITY = 0.65;
@@ -52,7 +52,7 @@ export const HESITATION_POINTS_PER_SECOND = 3;
 /** A word ending in one of these ends a sentence. */
 const SENTENCE_END = /[.?!]["')\]]*$/;
 
-/** Average sentence length bands (in words) for Conciseness: up to 20 is ideal, up to 30 long. */
+/** Average sentence length bands (in words) for Brevity: up to 20 is ideal, up to 30 long. */
 export const SENTENCE_LENGTH_BANDS = { idealTo: 20, longTo: 30 } as const;
 /** Sentences of more than this many words count as long. */
 export const LONG_SENTENCE_WORDS = 30;
@@ -92,7 +92,7 @@ export type Measurement = {
   fillers: { total: number; perMinute: number; per100Words: number; breakdown: FillerCount[] };
   /** Clarity is a share from 0 to 1. */
   pronunciation: { clarity: number; flagged: FlaggedWord[] };
-  /** WPM counts every word Deepgram heard, fillers included: fillers are already scored under Filler rate. */
+  /** WPM counts every word Deepgram heard, fillers included: fillers are already scored under Fluency. */
   pace: {
     overallWpm: number;
     activeWpm: number;
@@ -110,7 +110,7 @@ export type Measurement = {
     hesitationZones: Pause[];
     overTime: { windows: WpmWindow[]; average: number; standardDeviation: number; range: [number, number] };
   };
-  /** For Conciseness, scored by the judging step. Sentence lengths leave out fillers. */
+  /** For Brevity, scored by the judging step. Sentence lengths leave out fillers. */
   sentences: { words: number; sentences: number; averageLength: number; averageBand: SentenceBand; longSentences: number };
   scores: { pace: number; fillerRate: number; pronunciation: number };
   subScores: { pauseTiming: number; wordsPerMinute: number };
@@ -186,7 +186,7 @@ export function measuredSubScores({ scores, subScores }: Measurement): Record<st
 }
 
 /**
- * The Filler rate score (out of 150) for a rate of fillers per 100 words. Exported so the judging step
+ * The Fluency score (out of 150) for a rate of fillers per 100 words. Exported so the judging step
  * can rescore once it has added the discourse fillers Claude finds.
  */
 export function fillerRateScore(per100Words: number): number {

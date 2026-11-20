@@ -40,18 +40,22 @@ A recording's overall result out of 1000, the sum of its dimension scores.
 _Avoid_: Index, grade
 
 **Dimension**:
-One of the six areas a recording is scored on: Structure, Conciseness, Confidence, Pronunciation, Filler rate and Pace. Each has a fixed maximum.
-_Avoid_: Category (that's a kind of practice), criterion
+One of the six areas a recording is scored on: Shape, Brevity, Conviction, Clarity, Fluency and Rhythm. Each has a fixed maximum.
+In code they keep their original keys: `structure`, `conciseness`, `confidence`, `pronunciation`, `fillerRate` and `pace`.
+_Avoid_: Category (that's a kind of practice), criterion, and the old names Structure, Conciseness, Confidence, Pronunciation, Filler rate and Pace
+
+**Dimension group**:
+One of the two headings the dimensions are shown under: "What you said" (the judged dimensions) and "How you said it" (the measured dimensions).
 
 **Sub-score**:
-A scored part of a dimension, such as Signposting within Structure, with its own feedback.
+A scored part of a dimension, such as Signposting within Shape, with its own feedback.
 _Avoid_: Criterion, metric
 
 **Measured dimension**:
-A dimension calculated directly from the transcript's words and timings (Pace, Filler rate, Pronunciation), as opposed to a judged dimension.
+A dimension calculated directly from the transcript's words and timings (Clarity, Fluency, Rhythm), as opposed to a judged dimension.
 
 **Judged dimension**:
-A dimension scored by the language model against a rubric (Structure, Conciseness, Confidence).
+A dimension scored by the language model against a rubric (Shape, Brevity, Conviction).
 
 **Framework**:
 The answer structure a category is judged against, such as STAR for Interview or PREP for Opinion.
@@ -84,7 +88,7 @@ A speaker's thumbs up ("I want to work on this") or thumbs down ("not useful") o
 _Avoid_: Rating, like
 
 **Coach insights**:
-The rewrite-based feedback for one recording: a summary of the one change that would help most, how it was said compared with a better order, a suggested opening, shorter ways to say long sentences, and the ideal version.
+The rewrite-based feedback for one recording: a summary of the one change that would help most, the speaker's order compared with a better order, a suggested opening, shorter ways to say long sentences, and the ideal version.
 _Avoid_: Tips
 
 **Ideal version**:
@@ -103,7 +107,7 @@ A word that fills a pause without adding meaning, such as "um", "uh", or "well" 
 A phrase that softens a claim, such as "I think", "sort of" or "probably".
 _Avoid_: Qualifier
 
-## Pace
+## Rhythm
 
 **Overall WPM**:
 Words spoken divided by the recording's full duration, pauses included.

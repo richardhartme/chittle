@@ -128,7 +128,7 @@ describe("POST /api/recordings", () => {
       await signIn();
       const res = await upload("x", { query });
       expect(res.status).toBe(400);
-      expect(await res.json()).toEqual({ error: "Invalid recording details" });
+      expect(await res.json()).toEqual({ error: "The recording's details are invalid." });
       expect(await filesStored()).toHaveLength(0);
     });
 
@@ -146,7 +146,7 @@ describe("POST /api/recordings", () => {
         await signIn();
         const res = await upload("x", { contentType });
         expect(res.status).toBe(415);
-        expect(await res.json()).toEqual({ error: "Recordings must be audio or video" });
+        expect(await res.json()).toEqual({ error: "Recordings must be audio or video." });
         expect(await db.select().from(recordings)).toHaveLength(0);
       },
     );
@@ -155,14 +155,14 @@ describe("POST /api/recordings", () => {
       await signIn();
       const res = await upload(null);
       expect(res.status).toBe(400);
-      expect(await res.json()).toEqual({ error: "Empty upload" });
+      expect(await res.json()).toEqual({ error: "The upload was empty." });
     });
 
     it("rejects an empty body and leaves no file behind", async () => {
       await signIn();
       const res = await upload("");
       expect(res.status).toBe(400);
-      expect(await res.json()).toEqual({ error: "Empty upload" });
+      expect(await res.json()).toEqual({ error: "The upload was empty." });
       expect(await filesStored()).toHaveLength(0);
       expect(await db.select().from(recordings)).toHaveLength(0);
     });
@@ -171,7 +171,7 @@ describe("POST /api/recordings", () => {
       await signIn();
       const res = await upload("x", { query: { topicId: "00000000-0000-4000-8000-000000000000" } });
       expect(res.status).toBe(400);
-      expect(await res.json()).toEqual({ error: "Unknown topic" });
+      expect(await res.json()).toEqual({ error: "That topic doesn't exist." });
       expect(await filesStored()).toHaveLength(0);
     });
 
