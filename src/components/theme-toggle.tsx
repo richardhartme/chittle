@@ -7,7 +7,7 @@ const svg = { "aria-hidden": true, viewBox: "0 0 24 24", width: 20, height: 20 }
 const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" } as const;
 
 /**
- * Cycles the colour theme: system, light, dark. It renders all three states and globals.css shows
+ * Cycles the colour theme: light, dark, system. It renders all three states and globals.css shows
  * the one matching <html>'s data-theme, so the right one shows before React loads. `labelled` shows
  * the state's name beside its icon, as in the narrow-screen menu.
  */

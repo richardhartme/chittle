@@ -1,5 +1,5 @@
-/* Each colour role is light-dark(light, dark). The theme follows the system unless the theme button
-   has set data-theme on <html>, which pins color-scheme and so which value light-dark() picks. */
+/* Each colour role is light-dark(light, dark). The theme is light unless the theme button has set
+   data-theme on <html> to dark or system, which sets color-scheme and so which value light-dark() picks. */
 :root {
   /* Palette */
   --indigo: #2b0b7d;
@@ -53,11 +53,11 @@
   --shadow: 0 1px 2px light-dark(rgb(43 11 125 / 0.05), rgb(0 0 0 / 0.3)),
     0 8px 24px -12px light-dark(rgb(43 11 125 / 0.14), rgb(0 0 0 / 0.5));
 
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
-:root[data-theme="light"] {
-  color-scheme: light;
+:root[data-theme="system"] {
+  color-scheme: light dark;
 }
 
 :root[data-theme="dark"] {
@@ -162,7 +162,7 @@ p {
   gap: 0.25rem;
 }
 
-/* The theme button shows the state matching <html>'s data-theme: none means system. */
+/* The theme button shows the state matching <html>'s data-theme. None means light. */
 .theme-toggle {
   display: grid;
   place-items: center;
@@ -175,8 +175,8 @@ p {
   display: none;
 }
 
-:root:not([data-theme]) .theme-toggle .theme-system,
-:root[data-theme="light"] .theme-toggle .theme-light,
+:root:not([data-theme]) .theme-toggle .theme-light,
+:root[data-theme="system"] .theme-toggle .theme-system,
 :root[data-theme="dark"] .theme-toggle .theme-dark {
   display: grid;
 }

@@ -14,17 +14,17 @@ afterEach(() => {
 });
 
 describe("ThemeToggle", () => {
-  it("moves from system to light to dark and back, remembering each choice", async () => {
+  it("starts light, then moves to dark, to system and back, remembering each choice", async () => {
     render(<ThemeToggle />);
     expect(theme()).toBeNull();
 
     await userEvent.click(button());
-    expect(theme()).toBe("light");
-    expect(localStorage.getItem("theme")).toBe("light");
-
-    await userEvent.click(button());
     expect(theme()).toBe("dark");
     expect(localStorage.getItem("theme")).toBe("dark");
+
+    await userEvent.click(button());
+    expect(theme()).toBe("system");
+    expect(localStorage.getItem("theme")).toBe("system");
 
     await userEvent.click(button());
     expect(theme()).toBeNull();
@@ -42,10 +42,10 @@ describe("ThemeToggle", () => {
   it("follows a theme chosen in another tab", () => {
     render(<ThemeToggle />);
 
-    localStorage.setItem("theme", "light");
-    fireEvent(window, new StorageEvent("storage", { key: "theme", newValue: "light" }));
+    localStorage.setItem("theme", "system");
+    fireEvent(window, new StorageEvent("storage", { key: "theme", newValue: "system" }));
 
-    expect(theme()).toBe("light");
+    expect(theme()).toBe("system");
   });
 
   it("names each state for screen readers", () => {
@@ -60,13 +60,17 @@ describe("ThemeToggle", () => {
 describe("THEME_SCRIPT", () => {
   const run = () => new Function(THEME_SCRIPT)();
 
-  it("applies a stored light or dark theme", () => {
+  it("applies a stored dark or system theme", () => {
     localStorage.setItem("theme", "dark");
     run();
     expect(theme()).toBe("dark");
+
+    localStorage.setItem("theme", "system");
+    run();
+    expect(theme()).toBe("system");
   });
 
-  it("leaves the system theme for anything else", () => {
+  it("leaves the default light theme for anything else", () => {
     localStorage.setItem("theme", "sepia");
     run();
     expect(theme()).toBeNull();
