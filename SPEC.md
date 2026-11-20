@@ -116,8 +116,12 @@ Structure is judged against the category's framework. Uptalk isn't scored (it ne
 - Provider keys (see above).
 - Deleting an account removes all of the user's data, keys and recording files.
 
+### Navigation
+- Signed in, the header links to Home, Practise, Library and Account, and offers Sign out.
+- On narrow screens (720px and below) the links fold behind a menu button, which opens them in a panel under the header. The panel closes on a link, Escape, a tap outside it, or a change of page.
+
 ### Theme
-- A button at the right of the header, on every page and signed out too, cycles the colour theme: System (follows the device), Light, Dark. Its icon shows the current one.
+- A button at the right of the header, on every page and signed out too, cycles the colour theme: System (follows the device), Light, Dark. Its icon shows the current one. Signed in on a narrow screen, it moves into the menu, below Sign out, with the current theme's name beside the icon.
 - The choice is kept in the browser (`localStorage`), not the account, and an inline script applies it before the page paints, so there's no flash of the other theme.
 
 ## Out of scope (planned later)

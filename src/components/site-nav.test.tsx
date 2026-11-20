@@ -15,7 +15,7 @@ describe("SiteNav", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("links to the signed-in pages and offers sign-out", async () => {
+  it("links to the signed-in pages and offers the theme and sign-out", async () => {
     vi.mocked(getCurrentUser).mockResolvedValue({ id: "u", email: "a@example.com", createdAt: new Date() });
     render(await SiteNav());
 
@@ -24,5 +24,6 @@ describe("SiteNav", () => {
     expect(screen.getByRole("link", { name: "Library" })).toHaveAttribute("href", "/library");
     expect(screen.getByRole("link", { name: "Account" })).toHaveAttribute("href", "/account");
     expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Theme: / })).toBeInTheDocument();
   });
 });

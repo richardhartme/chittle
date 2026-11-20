@@ -8,9 +8,11 @@ const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLin
 
 /**
  * Cycles the colour theme: system, light, dark. It renders all three states and globals.css shows
- * the one matching <html>'s data-theme, so the right one shows before React loads.
+ * the one matching <html>'s data-theme, so the right one shows before React loads. `labelled` shows
+ * the state's name beside its icon, as in the narrow-screen menu.
  */
-export function ThemeToggle() {
+export function ThemeToggle({ labelled = false }: { labelled?: boolean }) {
+  const label = labelled ? "theme-label" : "sr-only";
   useLayoutEffect(() => {
     // Re-applies the stored theme after React's development remount clears <html>'s attributes.
     applyTheme(storedTheme());
@@ -29,7 +31,7 @@ export function ThemeToggle() {
           <rect x="3" y="4" width="18" height="12" rx="2" {...stroke} />
           <path d="M8 20h8M12 16v4" {...stroke} />
         </svg>
-        <span className="sr-only">Theme: system</span>
+        <span className={label}>Theme: system</span>
       </span>
       <span className="theme-light">
         <svg {...svg}>
@@ -39,13 +41,13 @@ export function ThemeToggle() {
             {...stroke}
           />
         </svg>
-        <span className="sr-only">Theme: light</span>
+        <span className={label}>Theme: light</span>
       </span>
       <span className="theme-dark">
         <svg {...svg}>
           <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" {...stroke} />
         </svg>
-        <span className="sr-only">Theme: dark</span>
+        <span className={label}>Theme: dark</span>
       </span>
     </button>
   );
