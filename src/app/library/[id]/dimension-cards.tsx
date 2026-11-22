@@ -1,10 +1,12 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
+
+import { DimensionIcon } from "@/components/dimension-icons";
 import { DIMENSION_GROUPS, DIMENSION_KEYS, DIMENSIONS, type DimensionKey } from "@/lib/assessment/dimensions";
 import { measuredSubScores, type Measurement } from "@/lib/assessment/measure";
 import type { JudgedResult } from "@/lib/assessment/score";
-import { DimensionIcon } from "@/components/dimension-icons";
+
 import { DimensionStats } from "./dimension-stats";
 import { DrawerCloseButton, useDrawer } from "./drawer";
 import { PaceChip } from "./pace-charts";

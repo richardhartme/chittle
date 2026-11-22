@@ -2,6 +2,7 @@ import type { DimensionKey } from "@/lib/assessment/dimensions";
 import { SENTENCE_LENGTH_BANDS, type Measurement } from "@/lib/assessment/measure";
 import type { JudgedResult } from "@/lib/assessment/score";
 import { formatDuration } from "@/lib/format";
+
 import { PaceCharts } from "./pace-charts";
 import { Bar } from "./score-parts";
 

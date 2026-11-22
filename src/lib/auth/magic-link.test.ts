@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { magicLinks, users } from "@/db/schema";
 import { db, resetDb } from "@/test/db";
 

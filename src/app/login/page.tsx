@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+
 import { getCurrentUser } from "@/lib/auth/session";
+
 import { LoginForm } from "./login-form";
 
 export default function LoginPage({ searchParams }: PageProps<"/login">) {

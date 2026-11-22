@@ -1,5 +1,7 @@
 import path from "node:path";
+
 import { afterEach, describe, expect, it, vi } from "vitest";
+
 import { env } from "./env";
 
 afterEach(() => vi.unstubAllEnvs());

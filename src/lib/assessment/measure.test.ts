@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+
 import type { TranscriptWord } from "@/db/schema";
+
 import { measure } from "./measure";
 
 /**

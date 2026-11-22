@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+
 import { verifyLoginLink } from "@/app/actions";
 
 export default function VerifyPage({ searchParams }: PageProps<"/auth/verify">) {

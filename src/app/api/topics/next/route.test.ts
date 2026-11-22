@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { userSeenTopics } from "@/db/schema";
 import { signIn } from "@/test/auth";
 import { createCategory, createTopic, db, resetDb } from "@/test/db";

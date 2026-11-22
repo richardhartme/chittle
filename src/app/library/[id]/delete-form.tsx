@@ -1,6 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
+
 import { deleteRecording } from "@/app/actions";
 
 export function DeleteForm({ recordingId }: { recordingId: string }) {

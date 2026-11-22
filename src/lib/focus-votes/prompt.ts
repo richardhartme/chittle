@@ -1,4 +1,5 @@
 import type { FocusVote } from "@/db/schema";
+
 import type { CastFocusVote } from "./index";
 
 /**

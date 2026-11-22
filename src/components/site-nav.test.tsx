@@ -6,6 +6,7 @@ vi.mock("@/app/actions", () => ({ logout: vi.fn() }));
 vi.mock("@/lib/auth/session", () => ({ getCurrentUser: vi.fn() }));
 
 import { getCurrentUser } from "@/lib/auth/session";
+
 import { SiteNav } from "./site-nav";
 
 describe("SiteNav", () => {

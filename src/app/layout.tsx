@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Bricolage_Grotesque, Figtree } from "next/font/google";
 import Link from "next/link";
 import { Suspense } from "react";
+
 import { SiteNav } from "@/components/site-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { THEME_SCRIPT } from "@/lib/theme";

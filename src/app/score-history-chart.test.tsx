@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+
 import { ScoreHistoryChart } from "./score-history-chart";
 
 const scores = { structure: 150, conciseness: 120, confidence: 110, pronunciation: 120, fillerRate: 90, pace: 65 };

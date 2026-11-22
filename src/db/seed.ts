@@ -1,8 +1,9 @@
 import { config } from "dotenv";
-config({ path: ".env" });
-
 import { sql } from "drizzle-orm";
+
 import { seedCategories } from "./seed-data";
+
+config({ path: ".env" });
 
 async function main() {
   // Imported after dotenv so DATABASE_URL is set when the client is created.

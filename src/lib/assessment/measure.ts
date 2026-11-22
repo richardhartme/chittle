@@ -1,4 +1,5 @@
 import type { TranscriptWord } from "@/db/schema";
+
 import { DIMENSIONS } from "./dimensions";
 
 /** Deepgram's filler tokens (with `filler_words=true`), in their plain-word form. */

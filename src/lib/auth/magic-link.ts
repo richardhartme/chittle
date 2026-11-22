@@ -1,7 +1,9 @@
 import { and, eq, gt, isNull } from "drizzle-orm";
+
 import { db } from "@/db";
 import { magicLinks, users } from "@/db/schema";
 import { env } from "@/lib/env";
+
 import { sendMagicLinkEmail } from "./email";
 import { generateToken, hashToken } from "./tokens";
 

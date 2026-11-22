@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+
 import { ACTIVE_WPM_BANDS, OVERALL_WPM_BANDS } from "@/lib/assessment/measure";
+
 import { bandScale, linearScale, smoothPath, timeTicks, wpmAxis } from "./pace-chart-geometry";
 
 describe("bandScale", () => {

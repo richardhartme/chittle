@@ -1,8 +1,11 @@
 import { randomBytes } from "node:crypto";
 import { stat } from "node:fs/promises";
 import path from "node:path";
+
+import Anthropic, { APIConnectionError, AuthenticationError, PermissionDeniedError } from "@anthropic-ai/sdk";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import {
   assessments,
   magicLinks,
@@ -14,14 +17,33 @@ import {
   userSeenTopics,
   users,
 } from "@/db/schema";
+import { measure } from "@/lib/assessment/measure";
+import { scoreJudgement } from "@/lib/assessment/score";
+import { SCORING_VERSION } from "@/lib/assessment/version";
+import { sendMagicLinkEmail } from "@/lib/auth/email";
 import { hashToken } from "@/lib/auth/tokens";
+import { focusVotesOn } from "@/lib/focus-votes";
+import { getProviderKeys } from "@/lib/provider-keys";
 import { signIn } from "@/test/auth";
-import { createCategory, createCustomTopic, createRecording, createTopic, createUser, db, resetDb } from "@/test/db";
 import { claudeReplies, stream } from "@/test/claude";
+import { createCategory, createCustomTopic, createRecording, createTopic, createUser, db, resetDb } from "@/test/db";
 import { judgementFixture, wordsOf } from "@/test/judgement";
 import { saveTestKeys } from "@/test/keys";
 import { after, afterSettled, cookieJar, redirectedTo, refresh, resetNextMocks } from "@/test/next";
 import { streamOf, withTempStorage } from "@/test/storage";
+
+import {
+  assessRecording,
+  deleteAccount,
+  deleteRecording,
+  logout,
+  removeProviderKey,
+  requestLoginLink,
+  saveProviderKey,
+  setFocusVote,
+  verifyLoginLink,
+} from "./actions";
+
 
 vi.mock("@/db", async () => ({ db: (await import("@/test/db")).db }));
 vi.mock("next/headers", async () => (await import("@/test/next")).headersMock);
@@ -39,25 +61,6 @@ vi.mock("@anthropic-ai/sdk", async (importOriginal) => ({
     this.beta = { messages: { stream } };
   }),
 }));
-
-import Anthropic, { APIConnectionError, AuthenticationError, PermissionDeniedError } from "@anthropic-ai/sdk";
-import { sendMagicLinkEmail } from "@/lib/auth/email";
-import { getProviderKeys } from "@/lib/provider-keys";
-import {
-  assessRecording,
-  deleteAccount,
-  deleteRecording,
-  logout,
-  removeProviderKey,
-  requestLoginLink,
-  saveProviderKey,
-  setFocusVote,
-  verifyLoginLink,
-} from "./actions";
-import { measure } from "@/lib/assessment/measure";
-import { scoreJudgement } from "@/lib/assessment/score";
-import { SCORING_VERSION } from "@/lib/assessment/version";
-import { focusVotesOn } from "@/lib/focus-votes";
 
 const temp = withTempStorage();
 

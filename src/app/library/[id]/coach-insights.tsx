@@ -1,7 +1,9 @@
 "use client";
 
 import { useId, useRef } from "react";
+
 import type { CoachInsights } from "@/lib/assessment/score";
+
 import { DrawerCloseButton, useDrawer } from "./drawer";
 
 /**

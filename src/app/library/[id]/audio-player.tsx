@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+
 import { formatDuration } from "@/lib/format";
 
 const time = (seconds: number) => formatDuration(Math.floor(seconds));

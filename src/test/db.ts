@@ -1,12 +1,15 @@
 import path from "node:path";
+
 import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
+
 import * as schema from "@/db/schema";
 import type { DimensionKey } from "@/lib/assessment/dimensions";
 import type { AssessmentResult } from "@/lib/assessment/result";
 import { SCORING_VERSION } from "@/lib/assessment/version";
 import type { FrameworkId } from "@/lib/frameworks";
+
 import { judgementFixture } from "./judgement";
 
 /**

@@ -1,7 +1,9 @@
 import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
+
 import { DimensionIcon } from "@/components/dimension-icons";
 import { DIMENSION_GROUPS, DIMENSIONS } from "@/lib/assessment/dimensions";
+
 import betterOrder from "./better-order.png";
 import dimensions from "./dimensions.png";
 import results from "./results.png";

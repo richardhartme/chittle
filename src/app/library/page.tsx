@@ -1,6 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { Suspense } from "react";
+
 import { db } from "@/db";
 import { assessments, recordings, topics } from "@/db/schema";
 import { MAX_TOTAL } from "@/lib/assessment/dimensions";

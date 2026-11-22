@@ -1,5 +1,6 @@
 import { prerender } from "react-dom/static";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import type { User } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createCategory, createRecording, createTopic, createUser, resetDb } from "@/test/db";

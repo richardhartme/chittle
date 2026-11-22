@@ -1,5 +1,7 @@
 import { randomBytes } from "node:crypto";
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { canEncrypt, decrypt, encrypt } from "./crypto";
 
 beforeEach(() => {

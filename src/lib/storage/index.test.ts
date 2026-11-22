@@ -1,7 +1,10 @@
 import path from "node:path";
+
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getStorage } from "./index";
+
 import { LocalStorage } from "./local";
+
+import { getStorage } from "./index";
 
 const globalForStorage = globalThis as unknown as { storage?: unknown };
 

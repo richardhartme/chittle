@@ -8,8 +8,9 @@
 import { config } from "dotenv";
 config({ path: ".env" });
 
-import type { TranscriptWord } from "./schema";
 import type { Judgement } from "@/lib/assessment/judgement";
+
+import type { TranscriptWord } from "./schema";
 
 const DEMO_EMAIL = "demo@chittle.local";
 const TOPIC = "Tell me about a time you led a team through a difficult situation.";
