@@ -2,6 +2,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { AudioPlayer } from "./audio-player";
 
 // jsdom has no media playback, so play() and pause() just fire the events a browser would.

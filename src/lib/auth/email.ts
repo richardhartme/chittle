@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+
 import { env } from "@/lib/env";
 
 export async function sendMagicLinkEmail(to: string, link: string): Promise<void> {

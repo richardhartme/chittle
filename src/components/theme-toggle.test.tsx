@@ -2,7 +2,9 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
+
 import { THEME_SCRIPT } from "@/lib/theme";
+
 import { ThemeToggle } from "./theme-toggle";
 
 const theme = () => document.documentElement.getAttribute("data-theme");

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { parseSetup, practiceAgainHref, recordingMode, setupHref } from "./practice";
 
 const topicId = "6f1c2a4e-8b1d-4c3a-9e2f-1a2b3c4d5e6f";

@@ -1,6 +1,8 @@
 import Link from "next/link";
+
 import { logout } from "@/app/actions";
 import { getCurrentUser } from "@/lib/auth/session";
+
 import { NavMenu } from "./nav-menu";
 import { ThemeToggle } from "./theme-toggle";
 

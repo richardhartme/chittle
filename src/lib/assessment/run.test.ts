@@ -1,19 +1,20 @@
+import Anthropic, { AuthenticationError, InternalServerError } from "@anthropic-ai/sdk";
 import { eq, sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { assessments, focusVotes, progressInsights, transcripts } from "@/db/schema";
-import { createAssessedRecording, createCategory, createRecording, createTopic, createUser, db, resetDb } from "@/test/db";
 import { claudeFails, claudeReplies, claudeRepliesInTurn, stream } from "@/test/claude";
+import { createAssessedRecording, createCategory, createRecording, createTopic, createUser, db, resetDb } from "@/test/db";
 import { judgementFixture } from "@/test/judgement";
 import { streamOf, withTempStorage } from "@/test/storage";
 
-vi.mock("@/db", async () => ({ db: (await import("@/test/db")).db }));
-vi.mock("@anthropic-ai/sdk", async (importOriginal) => (await import("@/test/claude")).anthropicMock(importOriginal));
-
-import Anthropic, { AuthenticationError, InternalServerError } from "@anthropic-ai/sdk";
 import { claimAssessment } from "./claim";
 import { scoringSchema } from "./judgement";
 import { runAssessment } from "./run";
 import { SCORING_VERSION } from "./version";
+
+vi.mock("@/db", async () => ({ db: (await import("@/test/db")).db }));
+vi.mock("@anthropic-ai/sdk", async (importOriginal) => (await import("@/test/claude")).anthropicMock(importOriginal));
 
 const temp = withTempStorage();
 const keys = { deepgram: "dg-secret-key", anthropic: "sk-secret-key" };

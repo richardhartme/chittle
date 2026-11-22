@@ -1,7 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+
 import { PGlite } from "@electric-sql/pglite";
 import { describe, expect, it } from "vitest";
+
 import { seedCategories } from "./seed-data";
 
 const migrations = fileURLToPath(new URL("../../drizzle/", import.meta.url));

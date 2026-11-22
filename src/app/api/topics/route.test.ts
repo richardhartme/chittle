@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { signIn } from "@/test/auth";
+
 import { topics } from "@/db/schema";
+import { signIn } from "@/test/auth";
 import { createCategory, createCustomTopic, createTopic, createUser, db, resetDb } from "@/test/db";
 import { resetNextMocks } from "@/test/next";
 

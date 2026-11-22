@@ -1,6 +1,7 @@
 "use client";
 
 import { useOptimistic, useState, useTransition } from "react";
+
 import { setFocusVote } from "@/app/actions";
 import type { FocusVote } from "@/db/schema";
 

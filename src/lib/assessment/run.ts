@@ -1,9 +1,11 @@
 import { and, eq, sql } from "drizzle-orm";
+
 import { db } from "@/db";
 import { assessments, categories, recordings, topics, transcripts } from "@/db/schema";
 import { recentFocusVotes } from "@/lib/focus-votes";
 import { redactForLogs } from "@/lib/logging";
 import { refreshProgressInsight } from "@/lib/progress-insight";
+
 import { transcribe } from "./deepgram";
 import { AssessmentError } from "./errors";
 import { judge } from "./judge";

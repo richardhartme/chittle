@@ -1,4 +1,5 @@
 import type { FocusVote } from "@/db/schema";
+
 import { FocusVoteToggles } from "./focus-vote";
 
 /** The recording's overview, strengths and areas to improve, each area with its focus vote. */

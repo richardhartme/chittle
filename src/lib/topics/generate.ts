@@ -1,8 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { and, desc, eq, isNull } from "drizzle-orm";
+
 import { db } from "@/db";
 import { topics, type Category } from "@/db/schema";
 import { env } from "@/lib/env";
+
 import { parseTopicList } from "./parse";
 
 const BATCH_SIZE = 10;

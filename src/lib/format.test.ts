@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { formatDate, formatDuration, formatTimeAgo } from "./format";
 
 describe("formatDuration", () => {

@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { DIMENSIONS } from "./dimensions";
 
 // Ranges and list lengths are in the descriptions, not Zod checks: structured outputs can't enforce

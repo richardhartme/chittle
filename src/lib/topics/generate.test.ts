@@ -1,6 +1,10 @@
+import Anthropic from "@anthropic-ai/sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { topics } from "@/db/schema";
 import { createCategory, createCustomTopic, createTopic, createUser, db, resetDb } from "@/test/db";
+
+import { canGenerateTopics, generateTopics } from "./generate";
 
 vi.mock("@/db", async () => ({ db: (await import("@/test/db")).db }));
 
@@ -10,9 +14,6 @@ vi.mock("@anthropic-ai/sdk", () => ({
     this.messages = { create };
   }),
 }));
-
-import Anthropic from "@anthropic-ai/sdk";
-import { canGenerateTopics, generateTopics } from "./generate";
 
 const reply = (text: string) => ({ content: [{ type: "text", text }] });
 

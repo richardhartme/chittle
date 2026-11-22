@@ -1,4 +1,7 @@
+import { Resend } from "resend";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { sendMagicLinkEmail } from "./email";
 
 const send = vi.fn();
 vi.mock("resend", () => ({
@@ -6,9 +9,6 @@ vi.mock("resend", () => ({
     this.emails = { send };
   }),
 }));
-
-import { Resend } from "resend";
-import { sendMagicLinkEmail } from "./email";
 
 beforeEach(() => {
   send.mockReset();

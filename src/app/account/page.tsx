@@ -1,7 +1,9 @@
 import { Suspense } from "react";
+
 import { deleteAccount } from "@/app/actions";
 import { requireUser } from "@/lib/auth/session";
 import { getProviderKeyHints, providerDetails, providers } from "@/lib/provider-keys";
+
 import { ProviderKeyForm } from "./provider-key-form";
 
 export default function AccountPage({ searchParams }: PageProps<"/account">) {

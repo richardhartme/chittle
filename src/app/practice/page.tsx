@@ -1,10 +1,12 @@
 import { asc } from "drizzle-orm";
 import { Suspense } from "react";
+
 import { db } from "@/db";
 import { categories } from "@/db/schema";
 import { requireUser } from "@/lib/auth/session";
 import { parseSetup } from "@/lib/practice";
 import { findTopic } from "@/lib/topics/next-topic";
+
 import { type InitialSetup, SetupForm } from "./setup-form";
 
 export default function PracticePage({ searchParams }: PageProps<"/practice">) {

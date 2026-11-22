@@ -1,6 +1,8 @@
 import Link from "next/link";
+
 import { DIMENSION_KEYS, DIMENSIONS, MAX_TOTAL, type DimensionKey } from "@/lib/assessment/dimensions";
 import type { PreviousAttempt } from "@/lib/assessment/previous-attempt";
+
 import { formatChange, ScoreChange } from "./score-parts";
 
 const TICKS = [0, 250, 500, 750, 1000];

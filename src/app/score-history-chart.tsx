@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useId } from "react";
+
 import { useWidth } from "@/components/use-width";
 import { DIMENSIONS } from "@/lib/assessment/dimensions";
 import type { DimensionView, ScoreColumn } from "@/lib/dashboard";

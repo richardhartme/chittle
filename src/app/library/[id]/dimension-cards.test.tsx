@@ -2,9 +2,11 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
+
 import type { Measurement } from "@/lib/assessment/measure";
 import { scoreJudgement } from "@/lib/assessment/score";
 import { judgementFixture, wordsOf } from "@/test/judgement";
+
 import { DimensionCards } from "./dimension-cards";
 
 const measured: Measurement = {

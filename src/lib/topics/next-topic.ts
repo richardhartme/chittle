@@ -1,7 +1,9 @@
 import { and, asc, desc, eq, isNull, notExists, or, type SQL, sql } from "drizzle-orm";
+
 import { db } from "@/db";
 import { categories, topics, userSeenTopics, type Topic } from "@/db/schema";
 import type { TopicSummary } from "@/lib/practice";
+
 import { canGenerateTopics, generateTopics } from "./generate";
 
 /** Shared topics, and the custom topics this user wrote. Other users' custom topics are never visible. */

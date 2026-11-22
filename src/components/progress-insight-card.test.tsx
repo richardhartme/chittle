@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { progressInsights } from "@/db/schema";
 import { createAssessedRecording, createCategory, createTopic, createUser, db, resetDb } from "@/test/db";
 

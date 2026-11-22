@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { topics, userSeenTopics } from "@/db/schema";
 import { createCategory, createCustomTopic, createTopic, createUser, db, resetDb } from "@/test/db";
 

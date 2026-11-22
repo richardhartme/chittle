@@ -1,4 +1,5 @@
 import { useId } from "react";
+
 import { useWidth } from "@/components/use-width";
 import {
   ACTIVE_WPM_BANDS,
@@ -14,6 +15,7 @@ import {
   type PaceBand,
   type Segment,
 } from "@/lib/assessment/measure";
+
 import { bandScale, linearScale, smoothPath, timeTicks, wpmAxis, type Point } from "./pace-chart-geometry";
 
 type Pace = Measurement["pace"];

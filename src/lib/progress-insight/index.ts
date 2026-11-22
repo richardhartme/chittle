@@ -1,8 +1,10 @@
 import { count, eq, sql } from "drizzle-orm";
+
 import { db } from "@/db";
 import { assessments, progressInsights, recordings } from "@/db/schema";
 import { scoredAssessmentOf } from "@/lib/assessment/status";
 import { redactForLogs } from "@/lib/logging";
+
 import { progressInsightContext } from "./context";
 import { generateProgressInsight } from "./generate";
 

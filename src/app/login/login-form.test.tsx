@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/app/actions", () => ({ requestLoginLink: vi.fn() }));
 
 import { requestLoginLink } from "@/app/actions";
+
 import { LoginForm } from "./login-form";
 
 beforeEach(() => vi.mocked(requestLoginLink).mockReset());

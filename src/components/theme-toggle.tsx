@@ -1,6 +1,7 @@
 "use client";
 
 import { useLayoutEffect } from "react";
+
 import { applyTheme, nextTheme, saveTheme, storedTheme, THEME_STORAGE_KEY } from "@/lib/theme";
 
 const svg = { "aria-hidden": true, viewBox: "0 0 24 24", width: 20, height: 20 } as const;

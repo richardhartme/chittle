@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/app/actions", () => ({ setFocusVote: vi.fn() }));
 
 import { setFocusVote } from "@/app/actions";
+
 import { FocusVoteToggles } from "./focus-vote";
 
 beforeEach(() => vi.mocked(setFocusVote).mockReset().mockResolvedValue({ saved: true }));

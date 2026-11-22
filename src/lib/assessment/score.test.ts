@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+
 import { judgementFixture, wordsOf } from "@/test/judgement";
+
 import type { Judgement } from "./judgement";
 import { measure } from "./measure";
 import { scoreJudgement } from "./score";

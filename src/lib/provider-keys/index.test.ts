@@ -1,5 +1,7 @@
 import { randomBytes } from "node:crypto";
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { createUser, resetDb } from "@/test/db";
 
 vi.mock("@/db", async () => ({ db: (await import("@/test/db")).db }));

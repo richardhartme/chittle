@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { usePathname } from "next/navigation";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("next/navigation", () => ({ usePathname: vi.fn() }));
-
-import { usePathname } from "next/navigation";
 import { NavMenu } from "./nav-menu";
+
+vi.mock("next/navigation", () => ({ usePathname: vi.fn() }));
 
 const menu = () => screen.getByRole("button", { name: "Menu" });
 

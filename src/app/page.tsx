@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { Suspense } from "react";
+
 import { ProgressInsightCard } from "@/components/progress-insight-card";
 import { db } from "@/db";
 import { recordings, type User } from "@/db/schema";
@@ -17,6 +18,7 @@ import {
 } from "@/lib/dashboard";
 import { formatDate } from "@/lib/format";
 import { hasProviderKeys } from "@/lib/provider-keys";
+
 import { Landing } from "./_landing/landing";
 import { ScoreHistoryChart } from "./score-history-chart";
 

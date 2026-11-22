@@ -1,8 +1,9 @@
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { sessions } from "@/db/schema";
-import { cookieJar, cookieStore, redirectedTo, resetNextMocks } from "@/test/next";
 import { createUser, db, resetDb } from "@/test/db";
+import { cookieJar, cookieStore, redirectedTo, resetNextMocks } from "@/test/next";
 
 vi.mock("@/db", async () => ({ db: (await import("@/test/db")).db }));
 vi.mock("next/headers", async () => (await import("@/test/next")).headersMock);

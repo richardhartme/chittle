@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+
 import { requireUser } from "@/lib/auth/session";
 import { parseSetup, SPEAK_SECONDS } from "@/lib/practice";
 import { findTopic } from "@/lib/topics/next-topic";
+
 import { RecordSession } from "./record-session";
 
 export default function RecordPage({ searchParams }: PageProps<"/practice/record">) {

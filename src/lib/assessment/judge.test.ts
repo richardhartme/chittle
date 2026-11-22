@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+
 import { wordsOf } from "@/test/judgement";
+
 import { buildCoachRequest, buildScoringRequest, type JudgeInput } from "./judge";
 import { measure } from "./measure";
 

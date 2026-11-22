@@ -1,10 +1,12 @@
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { MessageCreateParamsNonStreaming } from "@anthropic-ai/sdk/resources/beta/messages/messages";
 import { z } from "zod";
+
 import { DIMENSION_KEYS, DIMENSIONS, MAX_TOTAL } from "@/lib/assessment/dimensions";
 import { askClaude, FALLBACK_BETA, replyText } from "@/lib/claude";
 import { focusVotesSection } from "@/lib/focus-votes/prompt";
 import { FRAMEWORKS } from "@/lib/frameworks";
+
 import type { ProgressInsightAssessment, ProgressInsightContext } from "./context";
 
 /** The model that writes the progress insight. Not tied to the scoring version, since nothing is scored. */

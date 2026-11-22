@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import type { ProgressInsightAssessment } from "./context";
 import { buildProgressInsightRequest } from "./generate";
 
